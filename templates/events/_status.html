@@ -1,0 +1,6 @@
+{% load i18n %}<span class="badge b-{{ e.status }}">{{ e.get_status_display }}</span>
+<span class="badge b-{{ e.flyer_status }}">{{ e.get_flyer_status_display }}</span>
+{% if e.flyer_alert == "overdue" %}<span class="badge b-overdue">⚠ {% translate "Flyer late" %}</span>{% elif e.flyer_alert == "due" %}<span class="badge b-due">{% translate "Flyer due" %}</span>{% endif %}
+{% if e.is_late %}<span class="badge b-changes">{% translate "Sent late" %}</span>{% endif %}
+{% if e.exception_requested and e.status == "submitted" %}<span class="badge b-changes">{% translate "Asks for exception" %}</span>{% endif %}
+{% if e.limit_override %}<span class="badge b-submitted">{% translate "Approved exception" %}</span>{% endif %}

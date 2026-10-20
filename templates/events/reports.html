@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% translate "Reports" %}</h1>
+<form method="get" class="card">
+  <div class="form-grid">{% for field in form %}{% include "_field.html" %}{% endfor %}</div>
+  <button class="btn ghost">{% translate "Show" %}</button>
+</form>
+<div class="row" style="margin-bottom:1rem">
+  <a class="btn ok" href="{% url 'events:report_excel' %}?{{ query }}">⬇ Excel</a>
+  <a class="btn bad" href="{% url 'events:report_pdf' %}?{{ query }}">⬇ PDF</a>
+  <span class="muted">{{ quarter.label }} · {% blocktranslate count n=events|length %}{{ n }} event{% plural %}{{ n }} events{% endblocktranslate %}</span>
+</div>
+<div class="table-wrap"><table class="table small">
+  <tr><th>{% translate "Date" %}</th><th>{% translate "Church" %}</th><th>{% translate "Event" %}</th><th>{% translate "Type" %}</th><th>{% translate "Status" %}</th><th>{% translate "Flyer" %}</th></tr>
+  {% for e in events %}<tr><td>{{ e.date|date:"d/m/Y" }}</td><td>{{ e.church }}</td><td><a href="{% url 'events:detail' e.pk %}">{{ e.title }}</a></td><td>{{ e.event_type }}</td><td>{{ e.get_status_display }}</td><td>{{ e.get_flyer_status_display }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="muted">{% translate "No events match these filters." %}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

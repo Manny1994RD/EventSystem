@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% translate "My account" %}</h1>
+<p class="muted">{{ user.get_role_display }}{% if user.church %} · {{ user.church }}{% endif %} · {% translate "Username" %}: <strong>{{ user.username }}</strong></p>
+<div class="grid">
+  <form method="post" class="card">{% csrf_token %}
+    <h2 style="margin-top:0">{% translate "My details" %}</h2>
+    {% for field in form %}{% include "_field.html" %}{% endfor %}
+    <button class="btn" name="save_profile">{% translate "Save" %}</button>
+  </form>
+  <form method="post" class="card">{% csrf_token %}
+    <h2 style="margin-top:0">{% translate "Change my password" %}</h2>
+    {% for field in pw_form %}{% include "_field.html" %}{% endfor %}
+    <button class="btn" name="save_password">{% translate "Change password" %}</button>
+  </form>
+</div>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost">{% translate "Log out" %}</button></form>
+{% endblock %}

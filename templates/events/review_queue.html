@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% translate "Waiting for approval" %}</h1>
+<p class="muted">{% translate "The Regional Events Rep or the Overseer can approve. Open an event to approve, ask for changes or decline." %}</p>
+{% for e in events %}{% include "events/_event_item.html" with show_church=True %}
+{% empty %}<div class="all-good">✅ {% translate "No events waiting." %}</div>{% endfor %}
+<h2 id="changes">{% translate "Change requests" %}</h2>
+{% for c in changes %}
+  <a class="event-item" href="{% url 'events:detail' c.event_id %}">
+    <div class="datebox"><div class="d">{{ c.event.date|date:"j" }}</div><div class="m">{{ c.event.date|date:"M" }}</div></div>
+    <div class="info"><div class="title">{{ c.event.title }}</div>
+      <div class="small muted">{{ c.event.church }} · {% if c.cancel %}<strong>{% translate "Cancel" %}</strong>{% else %}{% if c.new_date %}→ {{ c.new_date|date:"j M" }} {% endif %}{% if c.new_location %}· {{ c.new_location }}{% endif %}{% endif %}</div>
+      <div class="small">{{ c.reason|truncatechars:90 }}</div></div>
+  </a>
+{% empty %}<div class="all-good">✅ {% translate "No change requests." %}</div>{% endfor %}
+{% endblock %}

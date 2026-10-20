@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% blocktranslate with name=user.first_name|default:user.username %}Hello, {{ name }}{% endblocktranslate %} 👋</h1>
+<p class="muted">{{ user.get_role_display }}{% if church %} · {{ church }}{% endif %}</p>
+
+<div class="card">
+  <h2 style="margin-top:0">{% translate "What you need to do" %}</h2>
+  <div class="todo">
+  {% for kind, text, urlname, extra in todo %}
+    <a class="{{ kind }}" href="{% url urlname %}{{ extra }}">{{ text }}</a>
+  {% empty %}
+    <div class="all-good">✅ {% translate "All caught up. Nothing waiting for you right now." %}</div>
+  {% endfor %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>{% translate "Next quarter" %}: {{ upcoming.label }}</h3>
+    <p>{% translate "Events must be sent by" %} <strong>{{ upcoming.submission_deadline|date:"j F Y" }}</strong>
+      {% if upcoming.days_to_deadline >= 0 %}<br><span class="badge {% if upcoming.days_to_deadline <= 7 %}b-changes{% else %}b-submitted{% endif %}">{% blocktranslate count days=upcoming.days_to_deadline %}{{ days }} day left{% plural %}{{ days }} days left{% endblocktranslate %}</span>
+      {% else %}<br><span class="badge b-declined">{% translate "Deadline passed — new events will be marked late" %}</span>{% endif %}</p>
+    {% if user.is_church_user %}
+      <a class="btn big block" href="{% url 'events:create' %}">＋ {% translate "Add an event" %}</a>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3>{% translate "How it works" %}</h3>
+    <ol class="small" style="padding-left:1.2rem;margin:0">
+      <li>{% translate "Add each event for the quarter (it is saved as a draft)." %}</li>
+      <li>{% translate "Press “Send for approval”. Max 2 events per day in the region." %}</li>
+      <li>{% translate "Upload the flyer — at least 2 weeks before the event (1 week at the latest)." %}</li>
+      <li>{% translate "You'll get a notification when it's approved or if something needs changing." %}</li>
+    </ol>
+  </div>
+</div>
+
+{% if next_events %}
+<h2>{% translate "Coming up" %}</h2>
+{% for e in next_events %}{% include "events/_event_item.html" with show_church=user.sees_all_churches %}{% endfor %}
+{% endif %}
+{% endblock %}

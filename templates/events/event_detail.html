@@ -1,0 +1,201 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<p><a href="{% url 'events:list' %}?quarter={{ event.quarter_id }}">‹ {% translate "Back to the list" %}</a></p>
+<h1>{{ event.title }}</h1>
+<p class="muted"><span class="dot" style="background:{{ event.church.color }}"></span>{{ event.church }} · {{ event.event_type }} · {{ event.quarter.label }}</p>
+<div class="badges row" style="gap:.3rem">{% include "events/_status.html" with e=event %}</div>
+
+{# progress tracker #}
+<div class="steps">
+  <div class="s {% if event.status == 'draft' %}now{% else %}done{% endif %}">1. {% translate "Draft" %}</div>
+  <div class="s {% if event.status == 'submitted' %}now{% elif event.status == 'changes' %}stop{% elif event.status == 'approved' %}done{% elif event.status == 'declined' or event.status == 'cancelled' %}stop{% endif %}">2. {% translate "Sent for approval" %}</div>
+  <div class="s {% if event.status == 'approved' %}done{% elif event.status == 'declined' or event.status == 'cancelled' %}stop{% endif %}">3. {% translate "Event approved" %}</div>
+  <div class="s {% if event.flyer_status == 'approved' %}done{% elif event.flyer_status == 'pending' or event.flyer_status == 'designer' %}now{% endif %}">4. {% translate "Flyer approved" %}</div>
+  <div class="s {% if event.is_ready %}done{% endif %}">✓ {% translate "Ready" %}</div>
+</div>
+
+{% if event.review_comment and event.status != 'approved' %}
+  <div class="msg {% if event.status == 'changes' or event.status == 'declined' %}warning{% else %}info{% endif %}">
+    <strong>{% translate "Comment from" %} {{ event.reviewed_by }}:</strong> {{ event.review_comment|linebreaksbr }}
+  </div>
+{% endif %}
+
+{# ---------- church actions ---------- #}
+{% if can_submit %}
+<div class="card">
+  {% if day_full %}
+    <div class="msg error"><strong>{% blocktranslate with d=event.date|date:"j F" %}{{ d }} is already full in the region.{% endblocktranslate %}</strong>
+      {% translate "You can change the date, or ask the Regional Events Rep / Overseer for an exception." %}</div>
+    <div class="row">
+      <a class="btn big" href="{% url 'events:edit' event.pk %}">📅 {% translate "Change the date" %}</a>
+    </div>
+    <details style="margin-top:.75rem"><summary>{% translate "Ask for an exception instead" %}</summary>
+      <form method="post" action="{% url 'events:submit' event.pk %}">{% csrf_token %}
+        <div class="field"><label>{% translate "Why do you need this day?" %}</label><textarea name="exception_reason" rows="3" required></textarea></div>
+        <button class="btn warn">{% translate "Send and ask for an exception" %}</button>
+      </form>
+    </details>
+  {% else %}
+    <p style="margin-top:0">{% if event.status == 'changes' %}{% translate "When you finish the changes, send it again." %}{% else %}{% translate "This event has NOT been sent yet. Check the details, then send it." %}{% endif %}</p>
+    <form method="post" action="{% url 'events:submit' event.pk %}">{% csrf_token %}
+      <button class="btn ok big block">📨 {% translate "Send for approval" %}</button>
+    </form>
+  {% endif %}
+  <div class="row" style="margin-top:.75rem">
+    <a class="btn ghost" href="{% url 'events:edit' event.pk %}">✏️ {% translate "Edit" %}</a>
+    {% if event.status == 'draft' %}
+    <form method="post" action="{% url 'events:delete' event.pk %}">{% csrf_token %}
+      <button class="btn ghost" data-confirm="{% translate 'Delete this draft? This cannot be undone.' %}">🗑 {% translate "Delete draft" %}</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if can_withdraw %}
+<div class="card row spread">
+  <span>{% translate "Waiting for the Regional Events Rep or the Overseer to approve it." %}</span>
+  <form method="post" action="{% url 'events:withdraw' event.pk %}">{% csrf_token %}
+    <button class="btn ghost" data-confirm="{% translate 'Take it back to make changes? You will need to send it again.' %}">↩ {% translate "Take back to edit" %}</button></form>
+</div>
+{% endif %}
+
+{% if change %}
+<div class="card" style="border-color:#f59e0b">
+  <h3>⏳ {% translate "Change requested" %} — {{ change.requested_by }}, {{ change.requested_at|date:"j M, g:i A" }}</h3>
+  <ul>
+    {% if change.cancel %}<li><strong>{% translate "Cancel this event" %}</strong></li>{% endif %}
+    {% if change.new_date %}<li>{% translate "New date" %}: {{ event.date|date:"j M Y" }} → <strong>{{ change.new_date|date:"j M Y" }}</strong></li>{% endif %}
+    {% if change.new_start_time %}<li>{% translate "New start time" %}: <strong>{{ change.new_start_time|time:"g:i A" }}</strong></li>{% endif %}
+    {% if change.new_end_time %}<li>{% translate "New end time" %}: <strong>{{ change.new_end_time|time:"g:i A" }}</strong></li>{% endif %}
+    {% if change.new_location %}<li>{% translate "New place" %}: <strong>{{ change.new_location }}</strong></li>{% endif %}
+  </ul>
+  <p><strong>{% translate "Reason" %}:</strong> {{ change.reason }}</p>
+  {% if user.is_reviewer %}
+  <form method="post" action="{% url 'events:change_decide' change.pk %}">{% csrf_token %}
+    <div class="field"><label>{% translate "Comment (optional)" %}</label><input type="text" name="comment"></div>
+    <label class="small"><input type="checkbox" name="override" value="1"> {% translate "Approve as an exception if the new day is full" %}</label>
+    <div class="row" style="margin-top:.5rem">
+      <button class="btn ok" name="decision" value="approve">✔ {% translate "Approve change" %}</button>
+      <button class="btn bad" name="decision" value="decline">✖ {% translate "Don't approve" %}</button>
+    </div>
+  </form>
+  {% else %}<p class="muted small">{% translate "The event stays as it is until the change is approved." %}</p>{% endif %}
+</div>
+{% endif %}
+
+{# ---------- reviewer actions ---------- #}
+{% if user.is_reviewer and event.status != 'draft' and event.status != 'cancelled' %}
+<div class="card" style="border-color:#93c5fd">
+  <h3>{% translate "Review" %}</h3>
+  {% if event.exception_requested and event.status == 'submitted' %}
+    <div class="msg warning"><strong>{% translate "This church asks for an exception (day is full)" %}:</strong> {{ event.exception_reason }}</div>
+  {% endif %}
+  <form method="post" action="{% url 'events:review' event.pk %}">{% csrf_token %}
+    <input type="hidden" name="next" value="detail">
+    <div class="field"><label>{% translate "Comment for the church" %}</label>
+      <textarea name="comment" rows="2" placeholder="{% translate 'Required if you ask for changes or decline' %}"></textarea></div>
+    {% if day_full %}
+      <div class="msg warning small"><label style="font-weight:600"><input type="checkbox" name="override" value="1"> {% blocktranslate %}Approve as an exception (this day already has {{ max_per_day }} or more events){% endblocktranslate %}</label></div>
+    {% endif %}
+    <div class="row">
+      {% if event.status == 'submitted' or event.status == 'changes' %}
+        <button class="btn ok" name="decision" value="approve">✔ {% translate "Approve" %}</button>
+      {% endif %}
+      {% if event.status == 'submitted' or event.status == 'approved' %}
+        <button class="btn warn" name="decision" value="changes">✎ {% translate "Ask for changes" %}</button>
+      {% endif %}
+      {% if event.status == 'submitted' or event.status == 'changes' %}
+        <button class="btn bad" name="decision" value="decline" data-confirm="{% translate 'Decline this event?' %}">✖ {% translate "Decline" %}</button>
+      {% endif %}
+      {% if event.status == 'approved' %}
+        <button class="btn bad" name="decision" value="cancel" data-confirm="{% translate 'Cancel this event? The church will be notified.' %}">{% translate "Cancel event" %}</button>
+      {% endif %}
+      {% if can_edit %}<a class="btn ghost" href="{% url 'events:edit' event.pk %}">📅 {% translate "Change date / details" %}</a>{% endif %}
+    </div>
+    <p class="small muted">{% translate "If you change the date yourself, it does not need to be approved again. The church is notified." %}</p>
+  </form>
+</div>
+{% endif %}
+
+<div class="grid">
+  {# ---------- details ---------- #}
+  <div class="card">
+    <h3>{% translate "Details" %}</h3>
+    <p><strong>📅 {{ event.date|date:"l j F Y" }}</strong><br>🕒 {{ event.start_time|time:"g:i A" }}{% if event.end_time %} – {{ event.end_time|time:"g:i A" }}{% endif %}</p>
+    <p>📍 {{ event.location }}</p>
+    <p>{{ event.description|linebreaksbr }}</p>
+    <p>👤 {{ event.contact_name }} · <a href="tel:{{ event.contact_phone }}">{{ event.contact_phone }}</a></p>
+    {% if event.expected_attendance %}<p>👥 {% translate "Expected attendance" %}: {{ event.expected_attendance }}</p>{% endif %}
+    {% if event.needs_support %}<div class="msg info">🤝 <strong>{% translate "Needs help from other churches" %}:</strong> {{ event.support_notes }}</div>{% endif %}
+    {% if same_day %}
+      <p class="small"><strong>{% translate "Also that day in the region" %}:</strong></p>
+      <ul class="small">{% for e in same_day %}<li>{{ e.start_time|time:"g:i A" }} — {{ e.title }} ({{ e.church }})</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+
+  {# ---------- flyer ---------- #}
+  <div class="card">
+    <h3>{% translate "Flyer" %} <span class="badge b-{{ event.flyer_status }}">{{ event.get_flyer_status_display }}</span></h3>
+    <p class="small muted">{% translate "Due" %}: <strong>{{ event.flyer_due_date|date:"j M Y" }}</strong> · {% translate "Final deadline" %}: <strong>{{ event.flyer_final_date|date:"j M Y" }}</strong></p>
+    {% if event.flyer_alert == 'overdue' %}<div class="msg error small">{% translate "The final deadline for the flyer has passed." %}</div>
+    {% elif event.flyer_alert == 'due' %}<div class="msg warning small">{% translate "The flyer is due. Please upload it soon." %}</div>{% endif %}
+    {% with f=event.latest_flyer %}
+    {% if f %}
+      {% if f.is_image %}<a href="{% url 'events:flyer_file' f.pk %}" target="_blank"><img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}" alt="flyer"></a>
+      {% else %}<a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}" target="_blank">📄 {% translate "Open flyer (PDF)" %}</a>{% endif %}
+      <p class="small muted">{% translate "Version" %} {{ f.version }} · {{ f.get_source_display }} · {{ f.uploaded_at|date:"j M, g:i A" }}</p>
+      {% if event.flyer_status == 'designer' and f.review_notes %}
+        <div class="msg warning"><strong>{% translate "Adjustments needed" %}:</strong> {{ f.review_notes|linebreaksbr }}</div>
+      {% endif %}
+    {% endif %}
+    {% endwith %}
+
+    {% if can_review_flyer %}
+      <form method="post" action="{% url 'events:flyer_review' event.pk %}" class="stack">{% csrf_token %}
+        <button class="btn ok block" name="decision" value="approve">✔ {% translate "Approve flyer" %}</button>
+        <div class="field"><label>{% translate "Or: what needs to be adjusted?" %}</label><textarea name="notes" rows="2"></textarea></div>
+        <button class="btn warn block" name="decision" value="designer">🎨 {% translate "Send to graphic designer" %}</button>
+      </form>
+    {% endif %}
+
+    {% if can_upload_flyer %}
+      <form method="post" enctype="multipart/form-data" action="{% url 'events:flyer_upload' event.pk %}" style="margin-top:1rem">{% csrf_token %}
+        <label>{% if user.is_designer %}{% translate "Upload the fixed flyer" %}{% elif event.latest_flyer %}{% translate "Upload a new version" %}{% else %}{% translate "Upload the flyer" %}{% endif %}</label>
+        <input type="file" name="file" accept="image/*,application/pdf" required>
+        <button class="btn block" style="margin-top:.5rem">⬆ {% translate "Upload" %}</button>
+      </form>
+    {% endif %}
+
+    {% if flyers|length > 1 %}
+      <details><summary>{% translate "Earlier versions" %}</summary><ul class="small">
+        {% for f in flyers %}<li><a href="{% url 'events:flyer_file' f.pk %}" target="_blank">{% translate "Version" %} {{ f.version }}</a> — {{ f.get_source_display }}, {{ f.uploaded_by }}, {{ f.uploaded_at|date:"j M" }}{% if f.review_notes %} · <em>{{ f.review_notes }}</em>{% endif %}</li>{% endfor %}
+      </ul></details>
+    {% endif %}
+  </div>
+</div>
+
+{% if can_request_change %}
+<details class="card"><summary>✏️ {% translate "Need to change or cancel this approved event?" %}</summary>
+  <p class="small muted">{% translate "The Regional Events Rep and the Overseer will be notified. The event stays as it is until they approve." %}</p>
+  <form method="post" action="{% url 'events:change_request' event.pk %}">{% csrf_token %}
+    <div class="form-grid">
+      {% include "_field.html" with field=change_form.new_date %}
+      {% include "_field.html" with field=change_form.new_start_time %}
+      {% include "_field.html" with field=change_form.new_end_time %}
+    </div>
+    {% include "_field.html" with field=change_form.new_location %}
+    {% include "_field.html" with field=change_form.cancel %}
+    {% include "_field.html" with field=change_form.reason %}
+    <button class="btn">{% translate "Send request" %}</button>
+  </form>
+</details>
+{% endif %}
+
+<div class="card">
+  <h3>{% translate "History" %}</h3>
+  <ul class="history small">
+    {% for a in activity %}<li><span class="muted">{{ a.created_at|date:"j M, g:i A" }} · {{ a.user|default:"—" }}:</span> {{ a.text }}</li>
+    {% empty %}<li class="muted">—</li>{% endfor %}
+  </ul>
+</div>
+{% endblock %}

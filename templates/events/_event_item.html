@@ -1,0 +1,9 @@
+{% load i18n %}
+<a class="event-item" href="{% url 'events:detail' e.pk %}">
+  <div class="datebox"><div class="d">{{ e.date|date:"j" }}</div><div class="m">{{ e.date|date:"M" }}</div></div>
+  <div class="info">
+    <div class="title">{{ e.title }}</div>
+    <div class="muted small">{% if show_church %}<span class="dot" style="background:{{ e.church.color }}"></span>{{ e.church }} · {% endif %}{{ e.event_type }} · {{ e.start_time|time:"g:i A" }}</div>
+    <div class="badges">{% include "events/_status.html" %}</div>
+  </div>
+</a>

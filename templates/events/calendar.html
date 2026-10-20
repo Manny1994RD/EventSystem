@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<div class="row spread"><h1>{% translate "Region calendar" %}</h1>
+  <a class="small" href="{% url 'events:public_calendar' %}" target="_blank">🔗 {% translate "Public calendar link (for members)" %}</a></div>
+{% include "events/_month.html" %}
+{% endblock %}

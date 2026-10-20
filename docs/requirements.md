@@ -1,6 +1,6 @@
 # Church Event System: Requirements
 
-Status: draft, round 2. Items marked **[?]** are still open.
+Status: round 3. The first version is built (see README.md). Section 13 lists the decisions made so far and what is still open.
 
 ## 1. Goal
 
@@ -138,16 +138,28 @@ Cancellations follow the same rule. The calendar limit is checked again whenever
 2. **Next**: email/WhatsApp notifications and reminders, volunteer sign-ups for events that need support
 3. **Later**: post-event reports (attendance, photos), history across years
 
-## 13. Open questions (round 2)
+## 13. Decisions (round 3)
 
-1. After the graphic designer uploads the fixed flyer, does it go back to the Overseer for a final OK, or is it approved automatically?
-2. Who approves the **event itself** (not the flyer): the Regional Events Rep, the Overseer, or either one?
-3. Does the Church Leader need to sign off before their church submits, or can the Church Events Rep submit alone?
-4. Flyer deadline: is 2 weeks the target and 1 week the hard cutoff? What happens after the cutoff (block the event, or only flag it)?
-5. App language: Spanish, English, or both with a switch?
-6. Notifications: email, WhatsApp, or both? (Email is free. WhatsApp needs a WhatsApp Business account and may cost a little.)
-7. Who is the Admin who creates users: the Regional Events Rep, the Overseer, or both?
-8. Do church members need a login to see the calendar, or should there be a public calendar link?
-9. Report format: Excel, PDF, or both?
-10. Is the Zima server already reachable from the internet? Do you have a domain name (e.g. `eventos.yourchurch.org`)?
-11. Quarter dates: calendar quarters (Jan–Mar, Apr–Jun, …)? What is the usual submission deadline (e.g. 2 weeks before the quarter starts)?
+| Topic | Decision |
+|---|---|
+| Fixed flyer from the designer | Goes back to the Overseer for the final OK. A setting can make it automatic. |
+| Who approves events | The Regional Events Rep **or** the Overseer. Either one is enough. |
+| Who submits | The Church Leader **or** the Church Events Rep. No extra sign-off needed. |
+| Flyer timing | Target: 2 weeks before the event. Final deadline: 1 week before. After the deadline the event is flagged as late, not blocked. |
+| Language | Spanish and English, with a switch. Spanish is the default. |
+| Notifications | In the app for now. WhatsApp group messages are a later project. |
+| Admin | The Regional Events Rep (with "can manage users and settings" turned on) and a Tech Admin |
+| Members | A public calendar link with no login |
+| Reports | Excel and PDF |
+| Hosting | Docker on the Zima server, shared through Tailscale (Serve or Funnel) |
+| Quarters | Calendar quarters. Submissions due 2 weeks before the quarter starts. |
+| Daily limit | 2 per day across the whole region. A church can ask for an exception; a reviewer approves it. |
+| Ease of use | Big buttons, a to-do list on the home screen, a step tracker on each event, a live "is this day free?" check, and confirmation before anything is deleted |
+
+## 14. Still open
+
+1. Can the Regional Events Rep also review flyers when the Overseer is away? (Right now only the Overseer can.)
+2. Should church members be able to see other churches' contact phone numbers on the public calendar? (Right now they can't.)
+3. WhatsApp: when you're ready, should messages go to one group for the whole region, or one group per church?
+4. Should the app send email reminders before the quarter deadline? (It needs an email account to send from.)
+5. Post-event reports (attendance, photos): do you want them in a later phase?

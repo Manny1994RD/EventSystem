@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% if creating %}{% translate "Add an event" %}{% else %}{% translate "Edit event" %}{% endif %}</h1>
+{% if creating %}<p class="muted">{% translate "Fill in the details. It is saved as a draft — you can send it for approval on the next screen." %}</p>{% endif %}
+<form method="post" class="card">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="msg error">{{ e }}</div>{% endfor %}
+  {% if form.church %}{% include "_field.html" with field=form.church %}{% endif %}
+  {% include "_field.html" with field=form.title %}
+  {% include "_field.html" with field=form.event_type %}
+  <div class="form-grid">
+    <div>{% include "_field.html" with field=form.date %}
+      <div id="day-check" data-url="{% url 'events:day_check' %}" data-exclude="{{ event.pk|default:'' }}"></div></div>
+    {% include "_field.html" with field=form.start_time %}
+    {% include "_field.html" with field=form.end_time %}
+  </div>
+  {% include "_field.html" with field=form.location %}
+  {% include "_field.html" with field=form.description %}
+  <div class="form-grid">
+    {% include "_field.html" with field=form.contact_name %}
+    {% include "_field.html" with field=form.contact_phone %}
+    {% include "_field.html" with field=form.expected_attendance %}
+  </div>
+  {% include "_field.html" with field=form.needs_support %}
+  {% include "_field.html" with field=form.support_notes %}
+  {% if need_override %}
+    <div class="msg warning"><label><input type="checkbox" name="override" value="1"> {% translate "Move it anyway (approve as an exception to the daily limit)" %}</label></div>
+  {% endif %}
+  <div class="row">
+    <button class="btn big">{% translate "Save" %}</button>
+    <a class="btn ghost" href="{% if event %}{% url 'events:detail' event.pk %}{% else %}{% url 'events:list' %}{% endif %}">{% translate "Cancel" %}</a>
+  </div>
+</form>
+{{ day_check_text|json_script:"day-check-text" }}
+{% endblock %}

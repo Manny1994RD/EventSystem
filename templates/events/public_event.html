@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'events:public_calendar' %}?y={{ event.date|date:'Y' }}&m={{ event.date|date:'n' }}">‹ {% translate "Calendar" %}</a></p>
+<div class="card">
+  <h1>{{ event.title }}</h1>
+  <p class="muted"><span class="dot" style="background:{{ event.church.color }}"></span>{{ event.church }} · {{ event.event_type }}</p>
+  <p><strong>📅 {{ event.date|date:"l j F Y" }}</strong><br>🕒 {{ event.start_time|time:"g:i A" }}{% if event.end_time %} – {{ event.end_time|time:"g:i A" }}{% endif %}</p>
+  <p>📍 {{ event.location }}</p>
+  <p>{{ event.description|linebreaksbr }}</p>
+  {% if flyer %}{% if flyer.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' flyer.pk %}" alt="flyer">
+  {% else %}<a class="btn ghost" href="{% url 'events:flyer_file' flyer.pk %}" target="_blank">📄 {% translate "Open flyer (PDF)" %}</a>{% endif %}{% endif %}
+</div>
+{% endblock %}

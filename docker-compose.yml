@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    image: church-events:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Database, flyers and backups live here on the Zima server.
+      - ${DATA_PATH:-./data}:/data
+
+  backup:
+    image: church-events:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [app]
+    volumes:
+      - ${DATA_PATH:-./data}:/data
+    entrypoint: ["/bin/sh", "-c"]
+    # One backup a day, keeping the last 14.
+    command: ["sleep 60; while true; do python manage.py backup --keep 14; sleep 86400; done"]

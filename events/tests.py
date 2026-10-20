@@ -1,0 +1,266 @@
+import datetime
+import shutil
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from accounts.models import Role, User
+
+from . import services
+from .models import ChangeRequest, Church, Event, EventStatus, EventType, FlyerStatus, Notification, SiteSettings
+
+MEDIA = tempfile.mkdtemp()
+PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 100
+
+
+@override_settings(MEDIA_ROOT=MEDIA, SECURE_PROXY_SSL_HEADER=None, SESSION_COOKIE_SECURE=False,
+                   CSRF_COOKIE_SECURE=False, PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class Base(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.santiago = Church.objects.create(name="Santiago")
+        self.vega = Church.objects.create(name="La Vega")
+        self.moca = Church.objects.create(name="Moca")
+        self.type = EventType.objects.create(name_es="Seminario", name_en="Seminar")
+        self.rep = self.make("rep", Role.CHURCH_REP, self.santiago)
+        self.leader_vega = self.make("leader", Role.CHURCH_LEADER, self.vega)
+        self.rep_moca = self.make("moca", Role.CHURCH_REP, self.moca)
+        self.regional = self.make("regional", Role.REGIONAL_REP, admin=True)
+        self.overseer = self.make("overseer", Role.OVERSEER)
+        self.designer = self.make("designer", Role.DESIGNER)
+        self.day = timezone.localdate() + datetime.timedelta(days=40)
+
+    def make(self, username, role, church=None, admin=False):
+        return User.objects.create_user(username=username, password="pass12345!", role=role, church=church,
+                                        is_app_admin=admin, first_name=username)
+
+    def event(self, church, user, date=None, submit=False):
+        e = Event.objects.create(
+            church=church, title=f"Event {church}", event_type=self.type, date=date or self.day,
+            start_time=datetime.time(18), location="Here", description="x", contact_name="c",
+            contact_phone="1", created_by=user,
+        )
+        if submit:
+            services.submit_event(e, user)
+        return e
+
+
+class DailyLimitTests(Base):
+    def test_third_event_on_same_day_is_blocked(self):
+        self.event(self.santiago, self.rep, submit=True)
+        self.event(self.vega, self.leader_vega, submit=True)
+        third = self.event(self.moca, self.rep_moca)
+        with self.assertRaises(services.DayFull):
+            services.submit_event(third, self.rep_moca)
+        third.refresh_from_db()
+        self.assertEqual(third.status, EventStatus.DRAFT)
+
+    def test_exception_request_then_reviewer_override(self):
+        self.event(self.santiago, self.rep, submit=True)
+        self.event(self.vega, self.leader_vega, submit=True)
+        third = self.event(self.moca, self.rep_moca)
+        services.submit_event(third, self.rep_moca, exception_reason="Visiting preacher")
+        self.assertTrue(third.exception_requested)
+        with self.assertRaises(services.DayFull):
+            services.review_event(third, self.regional, "approve")
+        services.review_event(third, self.regional, "approve", override=True)
+        third.refresh_from_db()
+        self.assertEqual(third.status, EventStatus.APPROVED)
+        self.assertTrue(third.limit_override)
+        self.assertEqual(third.override_by, self.regional)
+
+    def test_drafts_and_declined_do_not_take_a_spot(self):
+        self.event(self.santiago, self.rep)  # draft
+        declined = self.event(self.vega, self.leader_vega, submit=True)
+        services.review_event(declined, self.overseer, "decline", "no")
+        self.event(self.moca, self.rep_moca, submit=True)
+        self.assertFalse(services.day_is_full(self.day))
+
+    def test_limit_is_a_setting(self):
+        s = SiteSettings.load()
+        s.max_events_per_day = 1
+        s.save()
+        self.event(self.santiago, self.rep, submit=True)
+        with self.assertRaises(services.DayFull):
+            services.submit_event(self.event(self.vega, self.leader_vega), self.leader_vega)
+
+
+class WorkflowTests(Base):
+    def test_church_leader_or_rep_can_submit_and_reviewers_are_notified(self):
+        e = self.event(self.vega, self.leader_vega, submit=True)
+        self.assertEqual(e.status, EventStatus.SUBMITTED)
+        notified = set(Notification.objects.filter(event=e).values_list("user__username", flat=True))
+        self.assertEqual(notified, {"regional", "overseer"})
+
+    def test_either_reviewer_can_approve(self):
+        a = self.event(self.santiago, self.rep, submit=True)
+        b = self.event(self.vega, self.leader_vega, date=self.day + datetime.timedelta(days=1), submit=True)
+        services.review_event(a, self.regional, "approve")
+        services.review_event(b, self.overseer, "approve")
+        self.assertEqual(Event.objects.filter(status=EventStatus.APPROVED).count(), 2)
+
+    def test_church_cannot_approve(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        with self.assertRaises(services.NotAllowed):
+            services.review_event(e, self.rep, "approve")
+
+    def test_late_submission_is_flagged(self):
+        e = self.event(self.santiago, self.rep)
+        q = e.quarter
+        q.submission_deadline = timezone.localdate() - datetime.timedelta(days=1)
+        q.save()
+        services.submit_event(e, self.rep)
+        self.assertTrue(e.is_late)
+
+    def test_reviewer_moving_date_needs_no_reapproval(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        services.review_event(e, self.regional, "approve")
+        old = {"date": e.date, "start_time": e.start_time, "location": e.location}
+        e.date = e.date + datetime.timedelta(days=3)
+        services.reviewer_update(e, self.overseer, old)
+        e.refresh_from_db()
+        self.assertEqual(e.status, EventStatus.APPROVED)
+        self.assertTrue(Notification.objects.filter(user=self.rep, event=e, text_en__contains="updated").exists())
+
+    def test_church_change_request_flow(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        services.review_event(e, self.regional, "approve")
+        new_date = self.day + datetime.timedelta(days=5)
+        services.request_change(e, self.rep, ChangeRequest(new_date=new_date, reason="Rain"))
+        e.refresh_from_db()
+        self.assertEqual(e.date, self.day)  # unchanged until approved
+        self.assertTrue(Notification.objects.filter(user=self.overseer, text_en__contains="asks to change").exists())
+        services.decide_change(e.pending_change, self.overseer, approve=True)
+        e.refresh_from_db()
+        self.assertEqual(e.date, new_date)
+        self.assertEqual(e.status, EventStatus.APPROVED)
+
+
+class FlyerTests(Base):
+    def upload(self, event, user):
+        return services.upload_flyer(event, user, SimpleUploadedFile("flyer.png", PNG, content_type="image/png"))
+
+    def test_overseer_sends_to_designer_then_gives_final_ok(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        self.upload(e, self.rep)
+        self.assertEqual(e.flyer_status, FlyerStatus.PENDING)
+        services.review_flyer(e, self.overseer, approve=False, notes="Fix the date")
+        self.assertEqual(e.flyer_status, FlyerStatus.DESIGNER)
+        self.assertTrue(Notification.objects.filter(user=self.designer, event=e).exists())
+        self.upload(e, self.designer)
+        self.assertEqual(e.flyer_status, FlyerStatus.PENDING)
+        self.assertEqual(e.latest_flyer.version, 2)
+        services.review_flyer(e, self.overseer, approve=True)
+        self.assertEqual(e.flyer_status, FlyerStatus.APPROVED)
+
+    def test_designer_fix_auto_approved_when_setting_on(self):
+        s = SiteSettings.load()
+        s.auto_approve_designer_flyers = True
+        s.save()
+        e = self.event(self.santiago, self.rep, submit=True)
+        self.upload(e, self.rep)
+        services.review_flyer(e, self.overseer, approve=False, notes="Fix")
+        self.upload(e, self.designer)
+        self.assertEqual(e.flyer_status, FlyerStatus.APPROVED)
+
+    def test_only_overseer_reviews_flyers(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        self.upload(e, self.rep)
+        with self.assertRaises(services.NotAllowed):
+            services.review_flyer(e, self.regional, approve=True)
+
+    def test_flyer_alerts(self):
+        e = self.event(self.santiago, self.rep, date=timezone.localdate() + datetime.timedelta(days=10),
+                       submit=True)
+        self.assertEqual(e.flyer_alert, "due")
+        e.date = timezone.localdate() + datetime.timedelta(days=5)
+        self.assertEqual(e.flyer_alert, "overdue")
+
+    def test_private_flyer_is_not_public(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        f = self.upload(e, self.rep)
+        self.assertEqual(self.client.get(reverse("events:flyer_file", args=[f.pk])).status_code, 404)
+        self.client.force_login(self.rep_moca)
+        self.assertEqual(self.client.get(reverse("events:flyer_file", args=[f.pk])).status_code, 404)
+        self.client.force_login(self.rep)
+        self.assertEqual(self.client.get(reverse("events:flyer_file", args=[f.pk])).status_code, 200)
+
+
+class PageTests(Base):
+    """Every page opens for every role, in both languages, and church users only see their church."""
+
+    def test_pages_render_for_each_role(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        services.upload_flyer(e, self.rep, SimpleUploadedFile("f.png", PNG))
+        pages = ["events:home", "events:list", "events:calendar", "events:notifications", "profile"]
+        for user in (self.rep, self.leader_vega, self.regional, self.overseer, self.designer):
+            self.client.force_login(user)
+            for lang in ("es", "en"):
+                user.language = lang
+                user.save()
+                for name in pages:
+                    self.assertEqual(self.client.get(reverse(name)).status_code, 200, (user, name))
+        self.client.force_login(self.regional)
+        for name in ("events:review_queue", "events:regional", "events:reports", "events:settings", "users",
+                     "user_new", "events:report_excel", "events:report_pdf"):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)
+        self.assertEqual(self.client.get(reverse("events:detail", args=[e.pk])).status_code, 200)
+        self.client.force_login(self.overseer)
+        self.assertEqual(self.client.get(reverse("events:flyer_queue")).status_code, 200)
+        self.client.force_login(self.designer)
+        self.assertEqual(self.client.get(reverse("events:designer_queue")).status_code, 200)
+
+    def test_church_user_cannot_open_other_church_event(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        self.client.force_login(self.leader_vega)
+        self.assertEqual(self.client.get(reverse("events:detail", args=[e.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("events:regional")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("users")).status_code, 403)
+
+    def test_public_calendar_shows_only_approved(self):
+        a = self.event(self.santiago, self.rep, submit=True)
+        services.review_event(a, self.regional, "approve")
+        b = self.event(self.vega, self.leader_vega, submit=True)
+        b.title = "Secret pending"
+        b.save()
+        resp = self.client.get(reverse("events:public_calendar"), {"y": self.day.year, "m": self.day.month})
+        self.assertContains(resp, a.title)
+        self.assertNotContains(resp, "Secret pending")
+
+    def test_create_and_submit_through_the_form(self):
+        self.client.force_login(self.rep)
+        resp = self.client.post(reverse("events:create"), {
+            "title": "Culto", "event_type": self.type.pk, "date": self.day.isoformat(), "start_time": "18:00",
+            "location": "Templo", "description": "x", "contact_name": "Ana", "contact_phone": "809",
+        })
+        e = Event.objects.get(title="Culto")
+        self.assertEqual(e.church, self.santiago)
+        self.assertRedirects(resp, reverse("events:detail", args=[e.pk]))
+        self.client.post(reverse("events:submit", args=[e.pk]))
+        e.refresh_from_db()
+        self.assertEqual(e.status, EventStatus.SUBMITTED)
+
+    def test_admin_creates_user(self):
+        self.client.force_login(self.regional)
+        resp = self.client.post(reverse("user_new"), {
+            "first_name": "Maria", "username": "maria", "role": Role.CHURCH_REP, "church": self.moca.pk,
+            "language": "es", "is_active": "on", "password": "una-clave-segura",
+        })
+        self.assertRedirects(resp, reverse("users"))
+        self.assertTrue(User.objects.get(username="maria").check_password("una-clave-segura"))
+
+    def test_church_role_requires_church(self):
+        self.client.force_login(self.regional)
+        resp = self.client.post(reverse("user_new"), {
+            "first_name": "X", "username": "x", "role": Role.CHURCH_REP, "language": "es",
+            "is_active": "on", "password": "una-clave-segura",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(User.objects.filter(username="x").exists())

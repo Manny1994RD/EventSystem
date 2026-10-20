@@ -1,0 +1,35 @@
+{% load i18n %}
+<div class="row spread" style="margin-bottom:.5rem">
+  <a class="btn ghost" href="?y={{ prev_m|date:'Y' }}&m={{ prev_m|date:'n' }}">‹</a>
+  <h2 style="margin:0;text-transform:capitalize">{{ month|date:"F Y" }}</h2>
+  <a class="btn ghost" href="?y={{ next_m|date:'Y' }}&m={{ next_m|date:'n' }}">›</a>
+</div>
+<div class="legend">{% for c in churches %}<span><span class="dot" style="background:{{ c.color }}"></span>{{ c }}</span>{% endfor %}
+  {% if not public %}<span class="muted">┆ {% translate "dashed = waiting for approval" %} · <span style="color:var(--bad)">●</span> {% translate "day full" %}</span>{% endif %}</div>
+<table class="cal">
+  <tr>{% for d in weeks.0 %}<th>{{ d.date|date:"D" }}</th>{% endfor %}</tr>
+  {% for week in weeks %}<tr>
+    {% for day in week %}
+    <td class="{% if not day.in_month %}out{% endif %}{% if day.date == today %} today{% endif %}{% if day.events|length >= max_per_day and not public %} full{% endif %}">
+      <div class="num">{{ day.date|date:"j" }}</div>
+      {% for e in day.events %}
+        {% if public %}<a class="ev" style="border-color:{{ e.church.color }}" href="{% url 'events:public_event' e.pk %}" title="{{ e.title }} — {{ e.church }}">{{ e.start_time|time:"g:i" }} {{ e.title }}</a>
+        {% elif user.sees_all_churches or e.church_id == user.church_id %}<a class="ev{% if e.status != 'approved' %} pending{% endif %}" style="border-color:{{ e.church.color }}" href="{% url 'events:detail' e.pk %}" title="{{ e.title }} — {{ e.church }} — {{ e.get_status_display }}">{{ e.start_time|time:"g:i" }} {{ e.title }}</a>
+        {% elif e.status == 'approved' %}<a class="ev" style="border-color:{{ e.church.color }}" href="{% url 'events:public_event' e.pk %}" title="{{ e.title }} — {{ e.church }}">{{ e.start_time|time:"g:i" }} {{ e.title }}</a>
+        {% else %}<span class="ev pending" style="border-color:{{ e.church.color }}" title="{{ e.church }} — {{ e.get_status_display }}">{{ e.church }}</span>{% endif %}
+      {% endfor %}
+    </td>
+    {% endfor %}
+  </tr>{% endfor %}
+</table>
+<div class="cal-list">
+  {% for week in weeks %}{% for day in week %}{% if day.in_month and day.events %}
+    <div class="card" style="padding:.7rem">
+      <strong style="text-transform:capitalize">{{ day.date|date:"l j" }}</strong>{% if day.events|length >= max_per_day and not public %} <span class="badge b-declined">{% translate "Full" %}</span>{% endif %}
+      {% for e in day.events %}<div class="small" style="margin-top:.3rem"><span class="dot" style="background:{{ e.church.color }}"></span>{{ e.start_time|time:"g:i A" }} —
+        {% if public or e.status == 'approved' and not user.sees_all_churches and e.church_id != user.church_id %}<a href="{% url 'events:public_event' e.pk %}">{{ e.title }}</a>
+        {% elif user.sees_all_churches or e.church_id == user.church_id %}<a href="{% url 'events:detail' e.pk %}">{{ e.title }}</a> {% if e.status != 'approved' %}<span class="badge b-{{ e.status }}">{{ e.get_status_display }}</span>{% endif %}
+        {% else %}<span class="muted">{% translate "Pending" %}</span>{% endif %} ({{ e.church }})</div>{% endfor %}
+    </div>
+  {% endif %}{% endfor %}{% endfor %}
+</div>

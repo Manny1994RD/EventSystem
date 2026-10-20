@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% translate "Region overview" %}</h1>
+<div class="row spread card qnav">
+  <a class="btn ghost" href="?quarter={{ prev_q.pk }}">‹</a>
+  <div style="text-align:center"><strong>{{ quarter.label }}</strong><br><span class="small muted">{% translate "Deadline to send" %}: {{ quarter.submission_deadline|date:"j M Y" }}</span></div>
+  <a class="btn ghost" href="?quarter={{ next_q.pk }}">›</a>
+</div>
+<div class="table-wrap"><table class="table">
+  <tr><th>{% translate "Church" %}</th><th>{% translate "Sent?" %}</th><th>{% translate "Events" %}</th><th>{% translate "Drafts" %}</th><th>{% translate "Waiting" %}</th><th>{% translate "Changes" %}</th><th>{% translate "Approved" %}</th><th>{% translate "Ready (with flyer)" %}</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td><span class="dot" style="background:{{ r.church.color }}"></span><a href="{% url 'events:list' %}?quarter={{ quarter.pk }}&church={{ r.church.pk }}">{{ r.church }}</a></td>
+    <td>{% if r.state == 'missing' %}<span class="badge b-declined">{% translate "Nothing sent" %}</span>{% elif r.state == 'late' %}<span class="badge b-changes">{% translate "Sent (some late)" %}</span>{% else %}<span class="badge b-approved">{% translate "Sent" %}</span>{% endif %}</td>
+    <td>{{ r.total }}</td><td>{{ r.draft }}</td><td>{{ r.submitted }}</td><td>{{ r.changes }}</td><td>{{ r.approved }}</td><td>{{ r.flyers_ok }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+<div class="grid" style="margin-top:1rem">
+  <div class="card"><h3>{% translate "Full days" %}</h3>
+    <ul class="small">{% for d in full_days %}<li><a href="{% url 'events:calendar' %}?y={{ d.date|date:'Y' }}&m={{ d.date|date:'n' }}">{{ d.date|date:"l j M" }}</a> — {{ d.n }}</li>{% empty %}<li class="muted">—</li>{% endfor %}</ul></div>
+  <div class="card"><h3>{% translate "Exceptions requested" %}</h3>
+    <ul class="small">{% for e in exceptions %}<li><a href="{% url 'events:detail' e.pk %}">{{ e.title }}</a> ({{ e.church }}, {{ e.date|date:"j M" }}): {{ e.exception_reason }}</li>{% empty %}<li class="muted">—</li>{% endfor %}</ul></div>
+  <div class="card"><h3>{% translate "Exceptions approved" %}</h3>
+    <ul class="small">{% for e in overrides %}<li><a href="{% url 'events:detail' e.pk %}">{{ e.title }}</a> ({{ e.church }}, {{ e.date|date:"j M" }}) — {{ e.override_by|default:"" }}</li>{% empty %}<li class="muted">—</li>{% endfor %}</ul></div>
+</div>
+{% endblock %}

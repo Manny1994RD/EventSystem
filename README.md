@@ -1,0 +1,99 @@
+# Church Events / Eventos de la Iglesia
+
+A web app for planning each quarter's church events across the region. It works on any phone or computer, and nobody has to install anything.
+
+- Churches add their events for the quarter and send them for approval.
+- The Regional Events Rep or the Overseer approves events, asks for changes or declines them.
+- **2 events per day across the whole region.** A church can't send a third event for a full day. It can ask for an exception, and the Regional Events Rep or the Overseer can approve it.
+- **Flyers:** the church uploads the flyer and the Overseer reviews it. If the flyer needs changes, the Overseer sends it to the Graphic Designer with notes. After the designer uploads the fix, the Overseer gives the final OK. You can switch this to automatic approval in Settings.
+- **Flyer deadlines:** due 2 weeks before the event, with a final deadline 1 week before. Both can be changed in Settings.
+- **Changes after approval:**
+  - If the Regional Events Rep or the Overseer moves an event, the change applies right away and the church is notified.
+  - If a church asks for a change, the Regional Events Rep and the Overseer are notified and approve or decline it.
+- **Quarters** run Jan–Mar, Apr–Jun, Jul–Sep and Oct–Dec. Submissions are due 2 weeks before the quarter starts. Anything sent after that is marked "late".
+- **Public calendar** at `/public/`: members can see approved events without logging in.
+- **Reports:** download as Excel or PDF, filtered by quarter, church, type or status.
+- **Languages:** Spanish and English. Each person picks one with the ES / EN buttons.
+- **In-app notifications** (🔔). WhatsApp notifications are planned for later.
+
+## Roles
+
+| Role | Can do |
+|---|---|
+| Church Leader / Church Events Rep | Add, edit and send their church's events. Upload flyers. Ask for changes to approved events |
+| Regional Events Rep | Approve, decline or change any event. Approve exceptions. See the region overview and reports |
+| Overseer | Everything the Regional Events Rep can do, plus review flyers and send them to the designer |
+| Graphic Designer | See the flyers that need fixes and upload the corrected versions |
+| Tech Admin | Manage the system |
+
+Anyone with **"can manage users and settings"** turned on (for example the Regional Events Rep) can add users and churches, edit event types and change the rules and deadlines.
+
+## Installing on the Zima server
+
+You need Docker, which ZimaOS already has. Open a terminal on the Zima server and run:
+
+```sh
+git clone https://github.com/Manny1994RD/EventSystem.git
+cd EventSystem
+cp .env.example .env
+nano .env          # fill in SECRET_KEY, your Tailscale address and the admin password
+docker compose up -d --build
+```
+
+The app now runs on port **8000**. The first time it starts, it creates the 5 churches (Santiago, La Vega, Moca, Jarabacoa, Puerto Plata), the event types and the admin user from `.env`.
+
+### Sharing it through Tailscale
+
+- **Tailscale Serve** makes the app reachable only by devices on your tailnet, over HTTPS:
+  `tailscale serve --bg 8000`
+- **Tailscale Funnel** opens the app to anyone with the link, which church members need for the public calendar:
+  `tailscale funnel --bg 8000`
+
+Put the address Tailscale gives you (for example `zima.your-tailnet.ts.net`) in `.env` under both `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` (with `https://` in front for the second one). Then restart:
+
+```sh
+docker compose up -d
+```
+
+### After installing
+
+1. Open the link and log in with the admin username and password from `.env`.
+2. Go to **Users → Add a user** and create each person. Pick their role and their church, and give them a password.
+3. Send everyone the link. Church members get the public calendar: `https://<your address>/public/`
+
+### Data and backups
+
+Everything is stored in the folder set by `DATA_PATH` in `.env`:
+
+- `db.sqlite3`: the database
+- `media/`: the flyers
+- `backups/`: one backup per day, keeping the last 14
+
+To restore a backup, stop the app (`docker compose down`), extract the backup file into `DATA_PATH`, then start it again.
+
+### Updating
+
+```sh
+git pull
+docker compose up -d --build
+```
+
+### Tech admin panel
+
+`/tech-admin/` is Django's built-in admin, for low-level fixes. Only superusers can open it.
+
+## Development
+
+```sh
+python3 -m venv venv && . venv/bin/activate
+pip install -r requirements.txt
+export DEBUG=1
+python manage.py migrate
+python manage.py load_demo      # demo users; every password is demo12345
+python manage.py runserver
+```
+
+The demo users are `regional`, `overseer`, `designer`, `rep.santiago`, `leader.lavega`, and so on.
+
+- Tests: `python manage.py test`
+- Translations: after changing any text, run `python manage.py makemessages -l es`, fill in the new entries in `locale/es/LC_MESSAGES/django.po`, then run `python manage.py compilemessages`.

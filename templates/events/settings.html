@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h1>{% translate "Settings" %}</h1>
+<form method="post" class="card">{% csrf_token %}
+  <h2 style="margin-top:0">{% translate "Rules" %}</h2>
+  <div class="form-grid">{% for field in form %}{% include "_field.html" %}{% endfor %}</div>
+  <button class="btn">{% translate "Save" %}</button>
+</form>
+<div class="grid">
+  <div class="card">
+    <div class="row spread"><h2 style="margin:0">{% translate "Churches" %}</h2><a class="btn ghost" href="{% url 'events:church_new' %}">＋ {% translate "Add" %}</a></div>
+    <ul>{% for c in churches %}<li><span class="dot" style="background:{{ c.color }}"></span><a href="{% url 'events:church_edit' c.pk %}">{{ c }}</a> <span class="small muted">· {{ c.n_users }} {% translate "users" %}</span>{% if not c.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
+  </div>
+  <div class="card">
+    <div class="row spread"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">＋ {% translate "Add" %}</a></div>
+    <ul>{% for t in types %}<li><a href="{% url 'events:type_edit' t.pk %}">{{ t.name_es }} / {{ t.name_en }}</a>{% if not t.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">{% translate "Quarter deadlines" %}</h2>
+    <ul>{% for q in quarters %}<li>{{ q.label }}: <a href="{% url 'events:quarter_edit' q.pk %}">{{ q.submission_deadline|date:"j M Y" }}</a></li>{% endfor %}</ul>
+  </div>
+</div>
+{% endblock %}

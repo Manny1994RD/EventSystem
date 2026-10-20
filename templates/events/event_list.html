@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<div class="row spread">
+  <h1>{% if user.is_church_user %}{% translate "Our events" %}{% else %}{% translate "All events" %}{% endif %}</h1>
+  {% if user.is_church_user %}<a class="btn" href="{% url 'events:create' %}">＋ {% translate "Add an event" %}</a>{% endif %}
+</div>
+<div class="row spread card qnav">
+  <a class="btn ghost" href="?quarter={{ prev_q.pk }}">‹</a>
+  <div style="text-align:center"><strong>{{ quarter.label }}</strong><br>
+    <span class="small muted">{% translate "Deadline to send" %}: {{ quarter.submission_deadline|date:"j M Y" }}</span></div>
+  <a class="btn ghost" href="?quarter={{ next_q.pk }}">›</a>
+</div>
+<form class="row" method="get" style="margin-bottom:1rem">
+  <input type="hidden" name="quarter" value="{{ quarter.pk }}">
+  <select name="status" onchange="this.form.submit()" style="max-width:240px">
+    <option value="">{% translate "All statuses" %}</option>
+    {% for v, l in statuses %}<option value="{{ v }}" {% if v == status %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  {% if churches %}<select name="church" onchange="this.form.submit()" style="max-width:240px">
+    <option value="">{% translate "All churches" %}</option>
+    {% for c in churches %}<option value="{{ c.pk }}" {% if c.pk|stringformat:"s" == church_id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>{% endif %}
+</form>
+{% if drafts_count %}
+<div class="msg warning row spread">
+  <span>{% blocktranslate count n=drafts_count %}{{ n }} draft has not been sent yet.{% plural %}{{ n }} drafts have not been sent yet.{% endblocktranslate %}</span>
+  <form method="post" action="{% url 'events:submit_all' %}">{% csrf_token %}<input type="hidden" name="quarter" value="{{ quarter.pk }}">
+    <button class="btn ok" data-confirm="{% translate 'Send all drafts for approval?' %}">{% translate "Send all for approval" %}</button></form>
+</div>
+{% endif %}
+{% for e in events %}{% include "events/_event_item.html" with show_church=user.sees_all_churches %}
+{% empty %}<div class="card muted">{% translate "No events here yet." %}</div>{% endfor %}
+{% endblock %}
