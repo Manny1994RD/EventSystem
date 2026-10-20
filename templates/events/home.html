@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
-<h1>{% blocktranslate with name=user.first_name|default:user.username %}Hello, {{ name }}{% endblocktranslate %} 👋</h1>
+<h1>{% blocktranslate with name=user.first_name|default:user.username %}Hello, {{ name }}{% endblocktranslate %}</h1>
 <p class="muted">{{ user.get_role_display }}{% if church %} · {{ church }}{% endif %}</p>
 
 <div class="card">
@@ -9,7 +9,7 @@
   {% for kind, text, urlname, extra in todo %}
     <a class="{{ kind }}" href="{% url urlname %}{{ extra }}">{{ text }}</a>
   {% empty %}
-    <div class="all-good">✅ {% translate "All caught up. Nothing waiting for you right now." %}</div>
+    <div class="all-good">{% icon "check-circle" %}{% translate "All caught up. Nothing waiting for you right now." %}</div>
   {% endfor %}
   </div>
 </div>
@@ -21,7 +21,7 @@
       {% if upcoming.days_to_deadline >= 0 %}<br><span class="badge {% if upcoming.days_to_deadline <= 7 %}b-changes{% else %}b-submitted{% endif %}">{% blocktranslate count days=upcoming.days_to_deadline %}{{ days }} day left{% plural %}{{ days }} days left{% endblocktranslate %}</span>
       {% else %}<br><span class="badge b-declined">{% translate "Deadline passed — new events will be marked late" %}</span>{% endif %}</p>
     {% if user.is_church_user %}
-      <a class="btn big block" href="{% url 'events:create' %}">＋ {% translate "Add an event" %}</a>
+      <a class="btn big block" href="{% url 'events:create' %}">{% icon "plus" %}{% translate "Add an event" %}</a>
     {% endif %}
   </div>
   <div class="card">

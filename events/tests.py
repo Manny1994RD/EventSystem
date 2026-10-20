@@ -635,3 +635,88 @@ class FirstRunSetupTests(TestCase):
 
     def test_health_check_works_before_setup(self):
         self.assertEqual(self.client.get("/healthz").status_code, 200)
+
+
+class CalendarFeedTests(Base):
+    def test_feed_has_only_approved_events_with_links(self):
+        a = self.event(self.santiago, self.rep, submit=True)
+        a.title = "Noche mexicana, con tacos; y música"
+        a.save()
+        services.review_event(a, self.regional, "approve")
+        b = self.event(self.vega, self.leader_vega, submit=True)
+        b.title = "Pending one"
+        b.save()
+        resp = self.client.get(reverse("calendar_feed"))
+        self.assertEqual(resp["Content-Type"], "text/calendar; charset=utf-8")
+        body = resp.content.decode()
+        self.assertIn("BEGIN:VCALENDAR", body)
+        self.assertIn(r"SUMMARY:Noche mexicana\, con tacos\; y música", body)
+        self.assertIn(f"UID:event-{a.pk}@", body)
+        self.assertNotIn("Pending one", body)
+        self.assertTrue(all(len(line.encode()) <= 75 for line in body.split("\r\n")))
+        # One church only.
+        self.assertNotIn("Noche", self.client.get(reverse("calendar_feed"), {"church": self.vega.pk}).content.decode())
+
+    @override_settings(APP_URL="https://zima.example.ts.net")
+    def test_subscribe_buttons_use_the_app_address(self):
+        resp = self.client.get(reverse("events:public_calendar"))
+        self.assertContains(resp, "webcal://zima.example.ts.net/calendar.ics")
+        self.assertContains(resp, "calendar.google.com/calendar/render?cid=webcal%3A%2F%2Fzima.example.ts.net")
+
+
+class CopyEventTests(Base):
+    def test_copy_event_with_same_flyer(self):
+        src = self.event(self.santiago, self.rep, submit=True)
+        src.title = "Noche mexicana"
+        src.save()
+        services.upload_flyer(src, self.rep, SimpleUploadedFile("mex.png", PNG))
+        services.review_flyer(src, self.overseer, approve=True)
+        self.client.force_login(self.rep)
+        page = self.client.get(reverse("events:create"), {"copy": src.pk})
+        self.assertContains(page, 'value="Noche mexicana"')
+        self.assertContains(page, 'name="reuse_flyer"')
+        new_date = self.day + datetime.timedelta(days=30)
+        resp = self.client.post(reverse("events:create"), {
+            "copy": src.pk, "reuse_flyer": "1", "title": "Noche mexicana", "event_type": self.type.pk,
+            "date": new_date.isoformat(), "start_time": "18:00", "location": "Here", "description": "x",
+            "contact_name": "c", "contact_phone": "1",
+        })
+        new = Event.objects.exclude(pk=src.pk).get(title="Noche mexicana")
+        self.assertRedirects(resp, reverse("events:detail", args=[new.pk]))
+        self.assertEqual(new.status, EventStatus.DRAFT)
+        self.assertEqual(new.flyers.count(), 1)
+        self.assertEqual(new.flyer_status, FlyerStatus.PENDING)  # reviewed again
+        self.assertEqual(src.flyers.count(), 1)
+
+    def test_cannot_copy_another_churchs_event(self):
+        src = self.event(self.vega, self.leader_vega, submit=True)
+        src.title = "Vega only"
+        src.save()
+        self.client.force_login(self.rep)
+        self.assertNotContains(self.client.get(reverse("events:create"), {"copy": src.pk}), "Vega only")
+
+
+class LookAndAppTests(Base):
+    def test_tv_manifest_service_worker_and_icons(self):
+        self.assertEqual(self.client.get(reverse("events:tv")).status_code, 200)
+        m = self.client.get(reverse("manifest")).json()
+        self.assertEqual(m["display"], "standalone")
+        sw = self.client.get(reverse("service_worker"))
+        self.assertEqual(sw["Content-Type"], "application/javascript")
+        icon = self.client.get(reverse("app_icon", args=[192]))
+        self.assertEqual(icon["Content-Type"], "image/png")
+        self.assertEqual(self.client.get(reverse("offline")).status_code, 200)
+
+    def test_admin_sets_name_logo_and_color(self):
+        self.client.force_login(self.regional)
+        resp = self.client.post(reverse("events:look_settings"), {
+            "app_name": "Eventos Región Norte", "brand_color": "#7c3aed",
+            "logo": SimpleUploadedFile("logo.png", PNG),
+        })
+        self.assertEqual(resp.status_code, 302)
+        page = self.client.get(reverse("events:home"))
+        self.assertContains(page, "Eventos Región Norte")
+        self.assertContains(page, "--brand: #7c3aed")
+        self.assertEqual(self.client.get(reverse("brand_logo")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("app_icon", args=[512]))["Content-Type"], "image/png")
+        self.assertEqual(self.client.get(reverse("manifest")).json()["name"], "Eventos Región Norte")

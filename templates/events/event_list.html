@@ -2,7 +2,7 @@
 {% block content %}
 <div class="row spread">
   <h1>{% if user.is_church_user %}{% translate "Our events" %}{% else %}{% translate "All events" %}{% endif %}</h1>
-  {% if user.is_church_user %}<a class="btn" href="{% url 'events:create' %}">＋ {% translate "Add an event" %}</a>{% endif %}
+  {% if user.is_church_user %}<a class="btn" href="{% url 'events:create' %}">{% icon "plus" %}{% translate "Add an event" %}</a>{% endif %}
 </div>
 <div class="row spread card qnav">
   <a class="btn ghost" href="?quarter={{ prev_q.pk }}">‹</a>

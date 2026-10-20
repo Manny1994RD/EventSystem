@@ -15,6 +15,12 @@ A web app for planning each quarter's church events across the region. It works 
 - **Reports:** download as Excel or PDF, filtered by quarter, church, type or status.
 - **Post-event reports:** after an event, the church reports how many Church of God members and supporters from other churches attended (and from which churches), invites, the cost, the **fragrance** (testimonies or something nice that happened) and photos. Bible socials also ask for members who supported, fruits and Bible studies; Seminars also get it from the start, and admins can switch the full report on or off for any event type in Settings. The Regional Events Rep and the Overseer are notified, and the totals show on the **After the event** page and in the Excel download.
 - **Languages:** Spanish and English. Each person picks one with the ES / EN buttons.
+- **Calendar subscription:** on the calendar pages, "Add these events to my phone's calendar" subscribes Google Calendar, Apple Calendar or Outlook to the approved events (`/calendar.ics`). They update by themselves.
+- **Copy this event:** start a new event from an earlier one (for example another Mexican night). Everything is filled in except the date, and you can reuse the same flyer, which goes to review again.
+- **TV mode** (`/public/tv/`): a full-screen slideshow of upcoming events with flyers and a clock, for a TV or projector in the church. Double-click for full screen.
+- **Your look:** Settings → Look sets the app name, logo and main color. They're used everywhere, including the app icon.
+- **Install it like an app:** on a phone, open the link and choose "Add to Home Screen". It opens full screen with its own icon.
+- **Dark mode** follows the phone or computer setting.
 - **In-app notifications** (🔔).
 - **Email reminders:** off until an admin turns them on (see below). WhatsApp to the region's group chat is planned for later.
 

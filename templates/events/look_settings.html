@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<p><a href="{% url 'events:settings' %}" class="inline-icon">{% icon "chevron-left" %}{% translate "Settings" %}</a></p>
+<h1>{% translate "Look" %}</h1>
+<p class="muted">{% translate "The name, logo and color appear in the app, on the public calendar, on the TV screen and on phones' home screens." %}</p>
+<form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+  {% include "_field.html" with field=form.app_name %}
+  <div class="field">
+    <label for="id_logo">{% translate "Logo" %}</label>
+    {% if brand_logo %}<p><img src="{{ brand_logo }}" alt="" style="height:72px;width:72px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#fff;padding:4px"></p>{% endif %}
+    {{ form.logo }}
+    <div class="help">{{ form.logo.help_text }}</div>
+    {% for e in form.logo.errors %}<div class="error">{{ e }}</div>{% endfor %}
+  </div>
+  {% if site.logo %}{% include "_field.html" with field=form.remove_logo %}{% endif %}
+  {% include "_field.html" with field=form.brand_color %}
+  <button class="btn">{% icon "check" %}{% translate "Save" %}</button>
+</form>
+<div class="card row">
+  <img src="{% url 'app_icon' 192 %}" alt="" width="64" height="64" style="border-radius:14px">
+  <div><strong>{% translate "App icon" %}</strong><br><span class="small muted">{% translate "This is the icon people see when they add the app to their phone's home screen." %}</span></div>
+</div>
+{% endblock %}

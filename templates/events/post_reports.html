@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
-<h1>📝 {% translate "Post-event reports" %}</h1>
+<h1>{% icon "file" %}{% translate "Post-event reports" %}</h1>
 <div class="row spread card qnav">
   <a class="btn ghost" href="?quarter={{ prev_q.pk }}">‹</a>
   <div style="text-align:center"><strong>{{ quarter.label }}</strong><br><span class="small muted">{% blocktranslate with s=sent_count m=missing_count %}{{ s }} sent · {{ m }} missing{% endblocktranslate %}</span></div>
@@ -15,7 +15,7 @@
     <div class="datebox"><div class="d">{{ e.date|date:"j" }}</div><div class="m">{{ e.date|date:"M" }}</div></div>
     <div class="info"><div class="title">{{ e.title }}</div>
       <div class="small muted"><span class="dot" style="background:{{ e.church.color }}"></span>{{ e.church }} · {{ e.event_type }}</div>
-      <div class="badges">{% if r and r.status == 'submitted' %}<span class="badge b-approved">✔ {% translate "Report sent" %}</span> <span class="small">👥 {{ r.total_attendance }} · 🌱 {{ r.fruits }}</span>
+      <div class="badges">{% if r and r.status == 'submitted' %}<span class="badge b-approved">{% icon "check" %}{% translate "Report sent" %}</span> <span class="small">{% icon "users" %}{{ r.total_attendance }} · {% icon "sprout" %}{{ r.fruits }}</span>
         {% elif r %}<span class="badge b-changes">{% translate "Report started, not sent" %}</span>
         {% else %}<span class="badge b-declined">{% translate "No report yet" %}</span>{% endif %}</div></div>
   </a>

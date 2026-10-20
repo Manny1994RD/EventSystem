@@ -246,3 +246,30 @@ class EventReportForm(forms.ModelForm):
             if not images.check_image(f):
                 raise forms.ValidationError(_("“%(name)s” is not a photo.") % {"name": f.name})
         return files
+
+
+class LookForm(forms.ModelForm):
+    remove_logo = forms.BooleanField(label=_("remove the logo"), required=False)
+
+    class Meta:
+        model = SiteSettings
+        fields = ["app_name", "logo", "brand_color"]
+        widgets = {"brand_color": forms.TextInput(attrs={"type": "color"}),
+                   "logo": forms.FileInput(attrs={"accept": "image/*"})}
+
+    def clean_logo(self):
+        f = self.cleaned_data.get("logo")
+        if f and hasattr(f, "content_type"):
+            if not images.is_image_name(f.name) or not images.check_image(f):
+                raise forms.ValidationError(_("Please upload a picture (JPG, PNG) or a PDF."))
+            if f.size > 5 * 1024 * 1024:
+                raise forms.ValidationError(_("The file is too big (max %(mb)s MB).") % {"mb": 5})
+        return f
+
+    def save(self, commit=True):
+        site = super().save(commit=False)
+        if self.cleaned_data.get("remove_logo"):
+            site.logo = ""
+        if commit:
+            site.save()
+        return site

@@ -7,14 +7,14 @@
   <a href="{% url 'events:detail' e.pk %}">{% translate "Open event" %} ›</a></div>
   {% with f=e.latest_flyer %}{% if f %}
     {% if f.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}?v=preview" alt="" style="max-height:380px;margin:.75rem 0">
-    {% else %}<p><a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}" target="_blank">📄 PDF</a></p>{% endif %}
+    {% else %}<p><a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}" target="_blank">{% icon "file" %}PDF</a></p>{% endif %}
     <p class="small muted">{% translate "Version" %} {{ f.version }} · {{ f.get_source_display }}</p>
   {% endif %}{% endwith %}
   <form method="post" action="{% url 'events:flyer_review' e.pk %}">{% csrf_token %}<input type="hidden" name="next" value="queue">
-    <div class="row"><button class="btn ok" name="decision" value="approve">✔ {% translate "Approve flyer" %}</button></div>
+    <div class="row"><button class="btn ok" name="decision" value="approve">{% icon "check" %}{% translate "Approve flyer" %}</button></div>
     <div class="field" style="margin-top:.6rem"><label>{% translate "Or: what needs to be adjusted?" %}</label><textarea name="notes" rows="2"></textarea></div>
-    <button class="btn warn" name="decision" value="designer">🎨 {% translate "Send to graphic designer" %}</button>
+    <button class="btn warn" name="decision" value="designer">{% icon "brush" %}{% translate "Send to graphic designer" %}</button>
   </form>
 </div>
-{% empty %}<div class="all-good">✅ {% translate "No flyers waiting." %}</div>{% endfor %}
+{% empty %}<div class="all-good">{% icon "check-circle" %}{% translate "No flyers waiting." %}</div>{% endfor %}
 {% endblock %}

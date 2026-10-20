@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import reports, views
+from . import branding, reports, views
 
 app_name = "events"
 
@@ -32,6 +32,7 @@ urlpatterns = [
     path("calendar/", views.calendar_view, name="calendar"),
     path("calendar/day/", views.day_check, name="day_check"),
     path("public/", views.public_calendar, name="public_calendar"),
+    path("public/tv/", views.tv, name="tv"),
     path("public/event/<int:pk>/", views.public_event, name="public_event"),
     path("notifications/", views.notifications, name="notifications"),
     path("notifications/<int:pk>/", views.notification_open, name="notification_open"),
@@ -40,6 +41,7 @@ urlpatterns = [
     path("reports/pdf/", reports.report_pdf, name="report_pdf"),
     path("settings/", views.settings_home, name="settings"),
     path("settings/email/", views.email_settings, name="email_settings"),
+    path("settings/look/", views.look_settings, name="look_settings"),
     path("settings/churches/new/", views.church_edit, name="church_new"),
     path("settings/churches/<int:pk>/", views.church_edit, name="church_edit"),
     path("settings/types/new/", views.event_type_edit, name="type_new"),

@@ -6,8 +6,8 @@
   <button class="btn ghost">{% translate "Show" %}</button>
 </form>
 <div class="row" style="margin-bottom:1rem">
-  <a class="btn ok" href="{% url 'events:report_excel' %}?{{ query }}">⬇ Excel</a>
-  <a class="btn bad" href="{% url 'events:report_pdf' %}?{{ query }}">⬇ PDF</a>
+  <a class="btn ok" href="{% url 'events:report_excel' %}?{{ query }}">{% icon "download" %}Excel</a>
+  <a class="btn bad" href="{% url 'events:report_pdf' %}?{{ query }}">{% icon "download" %}PDF</a>
   <span class="muted">{{ quarter.label }} · {% blocktranslate count n=events|length %}{{ n }} event{% plural %}{{ n }} events{% endblocktranslate %}</span>
 </div>
 <div class="table-wrap"><table class="table small">

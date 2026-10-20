@@ -1,9 +1,11 @@
 {% extends "base.html" %}{% load i18n %}
 {% block title %}{% translate "Events calendar" %}{% endblock %}
 {% block content %}
-<h1>📅 {% translate "Events calendar" %}</h1>
+<h1>{% icon "calendar" %}{% translate "Events calendar" %}</h1>
 <p class="muted">{% translate "Approved events from all churches in the region." %}</p>
 {% include "events/_month.html" %}
 {% include "events/_slides.html" %}
+{% include "events/_subscribe.html" %}
+<p class="footer-note"><a class="inline-icon" href="{% url 'events:tv' %}">{% icon "tv" %}{% translate "TV mode" %}</a></p>
 {% if not user.is_authenticated %}<p class="footer-note"><a href="{% url 'login' %}">{% translate "Leaders: log in" %}</a></p>{% endif %}
 {% endblock %}

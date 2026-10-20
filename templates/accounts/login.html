@@ -16,6 +16,6 @@
     </form>
     <p class="small muted" style="margin-top:1rem">{% translate "Forgot your password? Ask your Regional Events Rep or the administrator to set a new one." %}</p>
   </div>
-  <p style="text-align:center"><a href="{% url 'events:public_calendar' %}">📅 {% translate "See the public events calendar" %}</a></p>
+  <p style="text-align:center"><a href="{% url 'events:public_calendar' %}">{% icon "calendar" %}{% translate "See the public events calendar" %}</a></p>
 </div>
 {% endblock %}

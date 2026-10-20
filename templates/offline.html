@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<div class="card" style="text-align:center;padding:2.5rem 1rem">
+  <h1>{% icon "refresh" "lg" %}</h1>
+  <h1>{% translate "No internet connection" %}</h1>
+  <p class="muted">{% translate "Check your Wi-Fi or mobile data, then try again." %}</p>
+  <button class="btn big" onclick="location.reload()">{% translate "Try again" %}</button>
+</div>
+{% endblock %}

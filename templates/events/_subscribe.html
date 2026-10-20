@@ -1,0 +1,11 @@
+{% load i18n %}
+<details class="card" id="subscribe">
+  <summary class="inline-icon">{% icon "calendar" %}{% translate "Add these events to my phone's calendar" %}</summary>
+  <p class="small muted">{% translate "Do it once: approved events will then appear in your Google or Apple calendar and update by themselves." %}</p>
+  <div class="subscribe">
+    <a class="btn" href="{{ subscribe.google_url }}" target="_blank" rel="noopener">{% icon "calendar" %}Google Calendar</a>
+    <a class="btn ghost" href="{{ subscribe.webcal_url }}">{% icon "calendar" %}{% translate "iPhone / Apple Calendar" %}</a>
+    <button type="button" class="btn ghost" data-copy="{{ subscribe.ics_url }}" data-copied="{% translate 'Link copied!' %}">{% icon "copy" %}{% translate "Copy link (Outlook, others)" %}</button>
+  </div>
+  <p class="small muted" style="margin-bottom:0">{% translate "On Android: open Google Calendar on a computer once with the button above; the events then show on your phone too." %}</p>
+</details>

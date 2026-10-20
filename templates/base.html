@@ -3,16 +3,30 @@
 <html lang="{{ LANG }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{% translate "Church Events" %}{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+  <meta name="theme-color" content="{{ brand_color }}">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" href="{% url 'app_icon' 192 %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% url 'app_icon' 180 %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="{{ brand_name }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <style>:root { --brand: {{ brand_color }}; }</style>
+  {% block head %}{% endblock %}
 </head>
-<body>
+<body{% block body_attrs %}{% endblock %}>
+{% include "_icons.html" %}
+{% block page %}
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="{% if user.is_authenticated %}{% url 'events:home' %}{% else %}{% url 'events:public_calendar' %}{% endif %}">⛪ {% translate "Church Events" %}</a>
+    <a class="brand" href="{% if user.is_authenticated %}{% url 'events:home' %}{% else %}{% url 'events:public_calendar' %}{% endif %}">
+      {% if brand_logo %}<img src="{{ brand_logo }}" alt="">{% else %}{% icon "church" %}{% endif %}<span>{{ brand_name }}</span></a>
     {% if user.is_authenticated %}
-      <a class="icon" href="{% url 'events:notifications' %}" title="{% translate 'Notifications' %}">🔔{% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}</a>
+      <a class="icon-btn" href="{% url 'events:notifications' %}" title="{% translate 'Notifications' %}" aria-label="{% translate 'Notifications' %}">{% icon "bell" %}{% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}</a>
     {% endif %}
     <span class="lang">
       <form method="post" action="{% url 'set_language' %}">{% csrf_token %}
@@ -22,23 +36,23 @@
       </form>
     </span>
     {% if user.is_authenticated %}
-      <a class="icon" href="{% url 'profile' %}" title="{% translate 'My account' %}">👤</a>
+      <a class="icon-btn" href="{% url 'profile' %}" title="{% translate 'My account' %}" aria-label="{% translate 'My account' %}">{% icon "user" %}</a>
     {% endif %}
   </div>
 </header>
 {% if user.is_authenticated %}
 {% with u=request.resolver_match.url_name %}
 <nav class="mainnav"><div class="inner">
-  <a href="{% url 'events:home' %}" class="{% if u == 'home' %}on{% endif %}">{% translate "Home" %}</a>
-  {% if user.is_church_user %}<a href="{% url 'events:list' %}" class="{% if u == 'list' %}on{% endif %}">{% translate "Our events" %}</a>{% elif user.sees_all_churches %}<a href="{% url 'events:list' %}" class="{% if u == 'list' %}on{% endif %}">{% translate "All events" %}</a>{% endif %}
-  <a href="{% url 'events:calendar' %}" class="{% if u == 'calendar' %}on{% endif %}">{% translate "Calendar" %}</a>
-  {% if user.is_reviewer %}<a href="{% url 'events:review_queue' %}" class="{% if u == 'review_queue' %}on{% endif %}">{% translate "To approve" %}</a>{% endif %}
-  {% if user.can_review_flyers %}<a href="{% url 'events:flyer_queue' %}" class="{% if u == 'flyer_queue' %}on{% endif %}">{% translate "Flyers" %}</a>{% endif %}
-  {% if user.is_designer %}<a href="{% url 'events:designer_queue' %}" class="{% if u == 'designer_queue' %}on{% endif %}">{% translate "Flyers to fix" %}</a>{% endif %}
-  {% if user.is_church_user or user.sees_all_churches %}<a href="{% url 'events:post_reports' %}" class="{% if u == 'post_reports' or u == 'report_edit' %}on{% endif %}">{% translate "After the event" %}</a>{% endif %}
-  {% if user.sees_all_churches %}<a href="{% url 'events:regional' %}" class="{% if u == 'regional' %}on{% endif %}">{% translate "Region" %}</a>{% endif %}
-  {% if user.is_reviewer or user.can_manage %}<a href="{% url 'events:reports' %}" class="{% if u == 'reports' %}on{% endif %}">{% translate "Reports" %}</a>{% endif %}
-  {% if user.can_manage %}<a href="{% url 'users' %}" class="{% if u == 'users' or u == 'user_edit' or u == 'user_new' %}on{% endif %}">{% translate "Users" %}</a><a href="{% url 'events:settings' %}" class="{% if u == 'settings' %}on{% endif %}">{% translate "Settings" %}</a>{% endif %}
+  <a href="{% url 'events:home' %}" class="{% if u == 'home' %}on{% endif %}">{% icon "home" %}{% translate "Home" %}</a>
+  {% if user.is_church_user %}<a href="{% url 'events:list' %}" class="{% if u == 'list' %}on{% endif %}">{% icon "list" %}{% translate "Our events" %}</a>{% elif user.sees_all_churches %}<a href="{% url 'events:list' %}" class="{% if u == 'list' %}on{% endif %}">{% icon "list" %}{% translate "All events" %}</a>{% endif %}
+  <a href="{% url 'events:calendar' %}" class="{% if u == 'calendar' %}on{% endif %}">{% icon "calendar" %}{% translate "Calendar" %}</a>
+  {% if user.is_reviewer %}<a href="{% url 'events:review_queue' %}" class="{% if u == 'review_queue' %}on{% endif %}">{% icon "check-circle" %}{% translate "To approve" %}</a>{% endif %}
+  {% if user.can_review_flyers %}<a href="{% url 'events:flyer_queue' %}" class="{% if u == 'flyer_queue' %}on{% endif %}">{% icon "image" %}{% translate "Flyers" %}</a>{% endif %}
+  {% if user.is_designer %}<a href="{% url 'events:designer_queue' %}" class="{% if u == 'designer_queue' %}on{% endif %}">{% icon "brush" %}{% translate "Flyers to fix" %}</a>{% endif %}
+  {% if user.is_church_user or user.sees_all_churches %}<a href="{% url 'events:post_reports' %}" class="{% if u == 'post_reports' or u == 'report_edit' %}on{% endif %}">{% icon "file" %}{% translate "After the event" %}</a>{% endif %}
+  {% if user.sees_all_churches %}<a href="{% url 'events:regional' %}" class="{% if u == 'regional' %}on{% endif %}">{% icon "map" %}{% translate "Region" %}</a>{% endif %}
+  {% if user.is_reviewer or user.can_manage %}<a href="{% url 'events:reports' %}" class="{% if u == 'reports' %}on{% endif %}">{% icon "chart" %}{% translate "Reports" %}</a>{% endif %}
+  {% if user.can_manage %}<a href="{% url 'users' %}" class="{% if u == 'users' or u == 'user_edit' or u == 'user_new' %}on{% endif %}">{% icon "users" %}{% translate "Users" %}</a><a href="{% url 'events:settings' %}" class="{% if u == 'settings' or u == 'look_settings' or u == 'email_settings' %}on{% endif %}">{% icon "sliders" %}{% translate "Settings" %}</a>{% endif %}
 </div></nav>
 {% endwith %}
 {% endif %}
@@ -46,6 +60,7 @@
   {% for message in messages %}<div class="msg {{ message.tags }}">{{ message }}</div>{% endfor %}
   {% block content %}{% endblock %}
 </main>
+{% endblock %}
 <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>

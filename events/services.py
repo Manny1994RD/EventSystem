@@ -353,6 +353,16 @@ def upload_flyer(event, user, uploaded_file):
 
 
 @transaction.atomic
+def copy_flyer(source_flyer, event, user):
+    """Reuse a flyer from an earlier event. It goes to review again, since the date on it usually changes."""
+    from django.core.files.base import ContentFile
+
+    with source_flyer.file.open("rb") as fh:
+        content = ContentFile(fh.read(), name=source_flyer.original_name)
+    return upload_flyer(event, user, content)
+
+
+@transaction.atomic
 def review_flyer(event, user, approve, notes=""):
     if not user.can_review_flyers or event.flyer_status != FlyerStatus.PENDING:
         raise NotAllowed

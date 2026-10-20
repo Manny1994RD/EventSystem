@@ -7,14 +7,14 @@
   {% include "events/_status.html" %}</div>
   {% with f=e.latest_flyer %}{% if f %}
     <div class="msg warning" style="margin-top:.75rem"><strong>{% translate "Adjustments needed" %}:</strong> {{ f.review_notes|linebreaksbr }}</div>
-    <p><a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}?download=1">⬇ {% translate "Download current flyer" %}</a></p>
+    <p><a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}?download=1">{% icon "download" %}{% translate "Download current flyer" %}</a></p>
   {% endif %}{% endwith %}
   {% if user.is_designer %}
   <form method="post" enctype="multipart/form-data" action="{% url 'events:flyer_upload' e.pk %}">{% csrf_token %}
     <label>{% translate "Upload the fixed flyer" %}</label><input type="file" name="file" accept="image/*,application/pdf" required>
-    <button class="btn" style="margin-top:.5rem">⬆ {% translate "Upload" %}</button>
+    <button class="btn" style="margin-top:.5rem">{% icon "upload" %}{% translate "Upload" %}</button>
   </form>
   {% endif %}
 </div>
-{% empty %}<div class="all-good">✅ {% translate "No flyers to fix right now." %}</div>{% endfor %}
+{% empty %}<div class="all-good">{% icon "check-circle" %}{% translate "No flyers to fix right now." %}</div>{% endfor %}
 {% endblock %}

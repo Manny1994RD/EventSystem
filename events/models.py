@@ -72,6 +72,13 @@ class SiteSettings(models.Model):
                                           help_text=_("Quarter deadline and flyer deadline reminders."))
     email_notifications = models.BooleanField(_("also email every notification"), default=False,
                                               help_text=_("Approvals, changes, flyers… (only to people with an email)."))
+    # Look: name, logo and main color shown in the app, on the public calendar and on phones' home screens.
+    app_name = models.CharField(_("app name"), max_length=60, blank=True,
+                                help_text=_("For example: Eventos Región Norte. Leave empty for “Church Events”."))
+    logo = models.FileField(_("logo"), upload_to="branding/", blank=True,
+                            help_text=_("A square picture works best (PNG or JPG)."))
+    brand_color = models.CharField(_("main color"), max_length=7, default="#1e3a8a")
+
     site_url = models.URLField(_("app address"), blank=True,
                                help_text=_("Used for links in emails, e.g. https://zima.your-tailnet.ts.net"))
 

@@ -1,3 +1,18 @@
+from django.urls import reverse
+from django.utils.translation import gettext as _
+
+from .models import SiteSettings
+
+
+def brand(request):
+    site = SiteSettings.load()
+    return {
+        "brand_name": site.app_name or _("Church Events"),
+        "brand_color": site.brand_color or "#1e3a8a",
+        "brand_logo": reverse("brand_logo") + f"?v={site.logo.name.split('/')[-1]}" if site.logo else "",
+    }
+
+
 from django.utils.translation import gettext as _
 
 

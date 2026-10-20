@@ -92,3 +92,27 @@ document.addEventListener('submit', function (e) {
     }, seconds * 1000);
   }
 })();
+
+// Let phones install the app and open it from the home screen.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+  });
+}
+
+// "Copy link" buttons.
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  var text = btn.dataset.copy;
+  var done = function () {
+    var old = btn.innerHTML;
+    btn.textContent = btn.dataset.copied || '✓';
+    setTimeout(function () { btn.innerHTML = old; }, 2000);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done, function () { window.prompt('', text); });
+  } else {
+    window.prompt('', text);
+  }
+});

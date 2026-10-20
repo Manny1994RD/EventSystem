@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{{ brand_name }} — TV{% endblock %}
+{% block page %}
+<div class="tv" data-autorefresh="300">
+  <div class="tv-head">
+    <span class="brand">{% if brand_logo %}<img src="{{ brand_logo }}" alt="">{% else %}{% icon "church" %}{% endif %}<span>{{ brand_name }}</span></span>
+    <div class="tv-clock"><strong id="tv-time">--:--</strong><span id="tv-date"></span></div>
+  </div>
+  <div class="tv-stage">
+    {% for s in slides %}{% with e=s.event %}
+    <section class="tv-slide{% if forloop.first %} on{% endif %}" style="--church:{{ e.church.color }}">
+      <div class="tv-art">
+        {% if s.flyer and s.flyer.is_image %}<img src="{% url 'events:flyer_file' s.flyer.pk %}?v=preview" alt="">
+        {% else %}<div class="slide-placeholder"><span>{{ e.event_type }}</span><strong>{{ e.title }}</strong></div>{% endif %}
+      </div>
+      <div class="tv-info">
+        <span class="tag{% if s.is_today %} today{% endif %}">{% if s.is_today %}{% translate "Today!" %}{% else %}{{ s.week }}{% endif %}</span>
+        <h2>{{ e.title }}</h2>
+        <div class="church"><span class="dot" style="background:{{ e.church.color }}"></span>{{ e.church }} · {{ e.event_type }}</div>
+        <div class="when">{% icon "calendar" %} {{ e.date|date:"l j F" }}<br>{% icon "clock" %} {{ e.start_time|time:"g:i A" }}{% if e.end_time %} – {{ e.end_time|time:"g:i A" }}{% endif %}</div>
+        <div class="where">{% icon "pin" %} {{ e.location }}</div>
+      </div>
+    </section>
+    {% endwith %}{% empty %}
+    <div class="tv-empty">{% translate "No approved events this week or next week yet." %}</div>
+    {% endfor %}
+  </div>
+  <div class="tv-progress"><div id="tv-bar"></div></div>
+</div>
+<script>
+(function () {
+  var slides = document.querySelectorAll('.tv-slide'), i = 0, SECONDS = 10;
+  var bar = document.getElementById('tv-bar');
+  var lang = document.documentElement.lang || 'es';
+  function tick() {
+    var now = new Date();
+    document.getElementById('tv-time').textContent = now.toLocaleTimeString(lang, { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('tv-date').textContent = now.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  function animateBar() {
+    bar.style.transition = 'none'; bar.style.width = '0';
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      bar.style.transition = 'width ' + SECONDS + 's linear'; bar.style.width = '100%';
+    }); });
+  }
+  tick(); setInterval(tick, 15000);
+  if (slides.length > 1) {
+    animateBar();
+    setInterval(function () {
+      slides[i].classList.remove('on');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('on');
+      animateBar();
+    }, SECONDS * 1000);
+  }
+  setInterval(function () { location.reload(); }, 5 * 60 * 1000);
+  document.addEventListener('dblclick', function () {
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  });
+})();
+</script>
+{% endblock %}

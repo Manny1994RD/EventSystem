@@ -40,7 +40,8 @@ def finish_setup():
 
 
 class FirstRunMiddleware:
-    ALLOWED_PREFIXES = ("/setup/", "/static/", "/healthz", "/language/")
+    ALLOWED_PREFIXES = ("/setup/", "/static/", "/healthz", "/language/", "/manifest.webmanifest", "/sw.js",
+                        "/brand/", "/offline/", "/calendar.ics")
 
     def __init__(self, get_response):
         self.get_response = get_response

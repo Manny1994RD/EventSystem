@@ -1,10 +1,12 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
 <h1>{% if creating %}{% translate "Add an event" %}{% else %}{% translate "Edit event" %}{% endif %}</h1>
+{% if source %}<div class="msg info inline-icon">{% icon "copy" %}<span>{% blocktranslate with t=source.title d=source.date|date:"j M Y" %}Copying “{{ t }}” ({{ d }}). Everything is filled in — pick the new date and change what you need.{% endblocktranslate %}</span></div>{% endif %}
 {% if creating %}<p class="muted">{% translate "Fill in the details. It is saved as a draft — you can send it for approval on the next screen." %}</p>{% endif %}
 <form method="post" class="card">{% csrf_token %}
   {% for e in form.non_field_errors %}<div class="msg error">{{ e }}</div>{% endfor %}
   {% if form.church %}{% include "_field.html" with field=form.church %}{% endif %}
+  {% if source %}<input type="hidden" name="copy" value="{{ source.pk }}">{% endif %}
   {% include "_field.html" with field=form.title %}
   {% include "_field.html" with field=form.event_type %}
   <div class="form-grid">
@@ -22,6 +24,15 @@
   </div>
   {% include "_field.html" with field=form.needs_support %}
   {% include "_field.html" with field=form.support_notes %}
+  {% if source_flyer %}
+    <div class="field check card" style="background:var(--surface-2);box-shadow:none">
+      <label><input type="checkbox" name="reuse_flyer" value="1" checked> {% translate "Use the same flyer" %}</label>
+      <div class="row" style="margin-top:.5rem;flex-wrap:nowrap">
+        {% if source_flyer.is_image %}<img src="{% url 'events:flyer_file' source_flyer.pk %}?v=preview" alt="" style="height:90px;border-radius:8px;border:1px solid var(--line)">{% endif %}
+        <span class="help">{% translate "It will be sent for review again. If the date or time on the flyer changed, upload the updated version afterwards." %}</span>
+      </div>
+    </div>
+  {% endif %}
   {% if need_override %}
     <div class="msg warning"><label><input type="checkbox" name="override" value="1"> {% translate "Move it anyway (approve as an exception to the daily limit)" %}</label></div>
   {% endif %}

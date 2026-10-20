@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
-<h1>🔔 {% translate "Notifications" %}</h1>
+<h1>{% icon "bell" %}{% translate "Notifications" %}</h1>
 {% for n in items %}
   <a class="event-item" href="{% url 'events:notification_open' n.pk %}"{% if not n.is_read %} style="border-color:var(--primary-2);background:#eff6ff"{% endif %}>
     <div class="info"><div>{{ n.text }}</div><div class="small muted">{{ n.created_at|timesince }}</div></div>

@@ -1,7 +1,10 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
 <div class="row spread"><h1>{% translate "Region calendar" %}</h1>
-  <a class="small" href="{% url 'events:public_calendar' %}" target="_blank">🔗 {% translate "Public calendar link (for members)" %}</a></div>
+  <span class="row" style="gap:1rem">
+    <a class="small inline-icon" href="{% url 'events:public_calendar' %}" target="_blank">{% icon "link" %}{% translate "Public calendar link (for members)" %}</a>
+    <a class="small inline-icon" href="{% url 'events:tv' %}" target="_blank">{% icon "tv" %}{% translate "TV mode" %}</a></span></div>
 {% include "events/_month.html" %}
 {% include "events/_slides.html" %}
+{% include "events/_subscribe.html" %}
 {% endblock %}

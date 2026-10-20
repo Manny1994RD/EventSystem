@@ -15,7 +15,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
 
-from . import emailing, services
+from . import emailing, ical, services
 from .forms import (
     ChangeRequestForm,
     ChurchForm,
@@ -24,6 +24,7 @@ from .forms import (
     EventForm,
     EventTypeForm,
     FlyerUploadForm,
+    LookForm,
     QuarterDeadlineForm,
     SiteSettingsForm,
 )
@@ -195,20 +196,39 @@ def event_create(request):
     initial = {"contact_name": user.get_full_name(), "contact_phone": user.phone}
     if request.GET.get("date"):
         initial["date"] = request.GET["date"]
+    # "Copy this event": start from one of our church's earlier events (date left empty to pick a new one).
+    source = None
+    copy_id = request.POST.get("copy") or request.GET.get("copy")
+    if copy_id:
+        source = Event.objects.filter(pk=copy_id, church=user.church).first()
+        if source:
+            initial.update({f: getattr(source, f) for f in COPY_FIELDS})
+    source_flyer = source.latest_flyer if source else None
     form = EventForm(request.POST or None, user=user, initial=initial)
     if request.method == "POST" and form.is_valid():
         event = form.save(commit=False)
         event.church = user.church
         event.created_by = user
         event.save()
-        services.log(event, user, gettext_lazy("Event created as a draft."))
+        if source:
+            services.log(event, user, gettext_lazy("Event created as a copy of “%(title)s” (%(date)s)."),
+                         title=source.title, date=services.fmt_date(source.date))
+            if source_flyer and request.POST.get("reuse_flyer"):
+                services.copy_flyer(source_flyer, event, user)
+        else:
+            services.log(event, user, gettext_lazy("Event created as a draft."))
         if services.day_is_full(event.date, exclude=event):
             messages.warning(request, _("Saved. Careful: that day is already full in the region. "
                                         "You will need to pick another date or ask for an exception."))
         else:
             messages.success(request, _("Saved as a draft. Remember to press “Send for approval”."))
         return redirect("events:detail", pk=event.pk)
-    return render(request, "events/event_form.html", {"form": form, "creating": True})
+    return render(request, "events/event_form.html", {
+        "form": form, "creating": True, "source": source, "source_flyer": source_flyer})
+
+
+COPY_FIELDS = ["title", "event_type", "start_time", "end_time", "location", "description", "contact_name",
+               "contact_phone", "expected_attendance", "needs_support", "support_notes"]
 
 
 @login_required
@@ -551,6 +571,7 @@ def calendar_view(request):
     ctx = _calendar_context(year, month, events)
     ctx["churches"] = Church.objects.filter(is_active=True)
     ctx["slides"] = upcoming_slides(request)
+    ctx["subscribe"] = ical.subscribe_links(request)
     return render(request, "events/calendar.html", ctx)
 
 
@@ -564,7 +585,7 @@ def upcoming_slides(request):
     slides = []
     for e in events:
         flyer = e.latest_flyer if e.flyer_status == FlyerStatus.APPROVED else None
-        link = request.build_absolute_uri(reverse("events:public_event", args=[e.pk]))
+        link = ical.absolute_url(request, reverse("events:public_event", args=[e.pk]))
         when = date_format(e.date, "l j F") + " · " + date_format(e.start_time, "TIME_FORMAT")
         invite = f"{e.title} — {e.church}\n📅 {when}\n📍 {e.location}\n{link}"
         slides.append({
@@ -587,7 +608,13 @@ def public_calendar(request):
     ctx["public"] = True
     ctx["list_events"] = events
     ctx["slides"] = upcoming_slides(request)
+    ctx["subscribe"] = ical.subscribe_links(request)
     return render(request, "events/public_calendar.html", ctx)
+
+
+def tv(request):
+    """Full-screen slideshow for a TV or projector in the church lobby."""
+    return render(request, "events/tv.html", {"slides": upcoming_slides(request)})
 
 
 def public_event(request, pk):
@@ -823,3 +850,14 @@ def post_reports(request):
         "totals": totals, "sent_count": len(sent), "missing_count": len(rows) - len(sent),
         "churches": Church.objects.all() if user.sees_all_churches else None, "church_id": church_id,
     })
+
+
+@manager_required
+def look_settings(request):
+    site = SiteSettings.load()
+    form = LookForm(request.POST or None, request.FILES or None, instance=site)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Settings saved."))
+        return redirect("events:look_settings")
+    return render(request, "events/look_settings.html", {"form": form, "site": site})

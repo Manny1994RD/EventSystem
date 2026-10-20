@@ -1,12 +1,12 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
 <p><a href="{% url 'events:detail' event.pk %}">‹ {{ event.title }}</a></p>
-<h1>📝 {% translate "Post-event report" %}</h1>
+<h1>{% icon "file" %}{% translate "Post-event report" %}</h1>
 <p class="muted">{{ event.title }} · {{ event.church }} · {{ event.date|date:"j F Y" }}</p>
 {% if report.review_comment %}<div class="msg warning"><strong>{% translate "Corrections requested" %}:</strong> {{ report.review_comment }}</div>{% endif %}
 <form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
   {% for e in form.non_field_errors %}<div class="msg error">{{ e }}</div>{% endfor %}
-  <h3>👥 {% translate "Attendance" %}</h3>
+  <h3>{% icon "users" %}{% translate "Attendance" %}</h3>
   <div class="form-grid">
     {% include "_field.html" with field=form.members_attended %}
     {% include "_field.html" with field=form.supporters_attended %}
@@ -15,28 +15,28 @@
   <div class="field"><label>{{ form.supporting_churches.label|capfirst }}</label>
     <div class="checks">{% for cb in form.supporting_churches %}<label>{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div></div>
   {% if form.fruits %}
-  <h3>🌱 {% translate "Results" %}</h3>
+  <h3>{% icon "sprout" %}{% translate "Results" %}</h3>
   <div class="form-grid">
     {% include "_field.html" with field=form.fruits %}
     {% include "_field.html" with field=form.bible_studies %}
   </div>
   {% endif %}
-  <h3>✉️ {% translate "Invites" %}</h3>
+  <h3>{% icon "mail" %}{% translate "Invites" %}</h3>
   <div class="form-grid">{% include "_field.html" with field=form.invites %}</div>
-  <h3>💵 {% translate "Cost" %}</h3>
+  <h3>{% icon "money" %}{% translate "Cost" %}</h3>
   <div class="form-grid">{% include "_field.html" with field=form.cost %}</div>
-  <h3>🌸 {% translate "Fragrance" %}</h3>
+  <h3>{% icon "sparkles" %}{% translate "Fragrance" %}</h3>
   {% include "_field.html" with field=form.fragrance %}
-  <h3>📷 {% translate "Photos" %}</h3>
+  <h3>{% icon "camera" %}{% translate "Photos" %}</h3>
   {% if report.pk and report.photos.exists %}
     <div class="photos">{% for p in report.photos.all %}
       <div><img src="{% url 'events:report_photo' p.pk %}?v=preview" alt="">
-        <button class="btn link small" form="del-{{ p.pk }}" data-confirm="{% translate 'Remove this photo?' %}">🗑 {% translate "Remove" %}</button></div>
+        <button class="btn link small" form="del-{{ p.pk }}" data-confirm="{% translate 'Remove this photo?' %}">{% icon "trash" %}{% translate "Remove" %}</button></div>
     {% endfor %}</div>
   {% endif %}
   {% include "_field.html" with field=form.photos %}
   <div class="row" style="margin-top:1rem">
-    <button class="btn ok big" name="submit" value="1" data-confirm="{% translate 'Send the report to the Regional Events Rep and the Overseer? You will not be able to change it after.' %}">📨 {% translate "Send report" %}</button>
+    <button class="btn ok big" name="submit" value="1" data-confirm="{% translate 'Send the report to the Regional Events Rep and the Overseer? You will not be able to change it after.' %}">{% icon "send" %}{% translate "Send report" %}</button>
     <button class="btn ghost" name="save" value="1">{% translate "Save and finish later" %}</button>
   </div>
 </form>

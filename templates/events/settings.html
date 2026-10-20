@@ -6,17 +6,22 @@
   <div class="form-grid">{% for field in form %}{% include "_field.html" %}{% endfor %}</div>
   <button class="btn">{% translate "Save" %}</button>
 </form>
+<a class="card row spread" href="{% url 'events:look_settings' %}" style="text-decoration:none;color:inherit">
+  <span class="row" style="flex-wrap:nowrap">{% if brand_logo %}<img src="{{ brand_logo }}" alt="" width="40" height="40" style="border-radius:10px;object-fit:contain;background:#fff">{% else %}<span class="dot" style="width:40px;height:40px;border-radius:10px;background:{{ brand_color }}"></span>{% endif %}
+    <span><strong>{% translate "Look" %}</strong><br><span class="small muted">{% translate "App name, logo and main color." %}</span></span></span>
+  {% icon "chevron-right" %}
+</a>
 <a class="card row spread" href="{% url 'events:email_settings' %}" style="text-decoration:none;color:inherit">
-  <span><strong>✉️ {% translate "Email reminders" %}</strong><br><span class="small muted">{% translate "Send deadline reminders and notifications by email." %}</span></span>
+  <span><strong>{% icon "mail" %}{% translate "Email reminders" %}</strong><br><span class="small muted">{% translate "Send deadline reminders and notifications by email." %}</span></span>
   {% if site.email_ready %}<span class="badge b-approved">{% translate "On" %}</span>{% else %}<span class="badge b-none">{% translate "Off" %}</span>{% endif %}
 </a>
 <div class="grid">
   <div class="card">
-    <div class="row spread"><h2 style="margin:0">{% translate "Churches" %}</h2><a class="btn ghost" href="{% url 'events:church_new' %}">＋ {% translate "Add" %}</a></div>
+    <div class="row spread"><h2 style="margin:0">{% translate "Churches" %}</h2><a class="btn ghost" href="{% url 'events:church_new' %}">{% icon "plus" %}{% translate "Add" %}</a></div>
     <ul>{% for c in churches %}<li><span class="dot" style="background:{{ c.color }}"></span><a href="{% url 'events:church_edit' c.pk %}">{{ c }}</a> <span class="small muted">· {{ c.n_users }} {% translate "users" %}</span>{% if not c.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
   </div>
   <div class="card">
-    <div class="row spread" id="types"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">＋ {% translate "Add" %}</a></div>
+    <div class="row spread" id="types"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">{% icon "plus" %}{% translate "Add" %}</a></div>
     <p class="small muted">{% translate "Turn on “Full report” for events that also report members who supported, fruits and Bible studies." %}</p>
     {% for t in types %}
     <div class="row spread type-row">

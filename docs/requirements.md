@@ -201,6 +201,20 @@ Under the month calendar (both the public calendar and the leaders' calendar) th
 - the slides move on their own every 7 seconds and stop while someone is touching them; people can also swipe or use the arrows
 - the page refreshes itself every 5 minutes, so new approvals and changes show up without anyone pressing refresh
 
-## 17. Still open
+## 17. Review and upgrade (round 8)
 
-1. WhatsApp group messages (automatic posts to the region's group): a separate project, for later.
+**Fixed:** a placeholder secret key is now refused (and a key is created automatically), the login locks after 5 wrong passwords, the Django admin is off by default, a day-limit exception no longer follows an event to a new date, two churches can't take the last spot at the same moment, other churches' pending events stay private in the "is this day free?" check, and uploaded pictures are checked.
+
+**Faster:** small preview copies of flyers and photos, browser caching, emails sent in the background.
+
+**Easier setup:** a first-time setup screen with a setup code, one setting (`APP_URL`), a health check, a separate backup folder, GitHub building a ready-made app image after the tests pass, a ZimaOS install file, optional automatic updates, and Dependabot.
+
+**Look:** a consistent icon set instead of emoji, the Inter font, an app name, logo and main color set in Settings, dark mode, installing to the phone's home screen (with an offline page), and TV mode.
+
+**New:** a calendar subscription link (Google, Apple, Outlook), and "Copy this event" with the option to reuse the flyer.
+
+## 18. Later (not now)
+
+1. WhatsApp group messages (automatic posts to the region's group).
+2. QR code for the public calendar.
+3. Volunteer sign-up for events that need help.
