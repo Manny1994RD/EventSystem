@@ -1,6 +1,7 @@
 """Sending email with the account an admin entered in Settings. Does nothing while email is off."""
 
 import logging
+import threading
 
 from django.conf import settings as django_settings
 from django.core.mail import EmailMessage, get_connection
@@ -54,3 +55,11 @@ def send_to_users(users, subject, text_es, text_en, event=None, site=None, raise
             raise
         log.exception("Could not send email")
         return 0
+
+
+def send_in_background(*args, **kwargs):
+    """Send without making the person who clicked wait for the email server."""
+    if django_settings.EMAIL_BACKEND != SMTP_BACKEND:
+        return send_to_users(*args, **kwargs)  # tests: send right away so they can check the outbox
+    threading.Thread(target=send_to_users, args=args, kwargs=kwargs, daemon=True).start()
+    return None

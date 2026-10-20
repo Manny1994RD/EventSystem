@@ -31,36 +31,44 @@ Anyone with **"can manage users and settings"** turned on (for example the Regio
 
 ## Installing on the Zima server
 
-You need Docker, which ZimaOS already has. Open a terminal on the Zima server and run:
+Every time code is pushed to GitHub, a ready-made app image is built automatically (`ghcr.io/manny1994rd/eventsystem`). The Zima server just downloads it, so nothing gets built on the server.
+
+> **One-time step on GitHub:** after the first build finishes (the **Actions** tab shows a green check), go to your GitHub profile → **Packages** → **eventsystem** → **Package settings**, and change the visibility to **Public**. Then the Zima server can download it without a GitHub login.
+
+### Option A: from the ZimaOS dashboard (no terminal)
+
+1. Open **App Store** → **+** (top right) → **Install a customized app** → **Import**.
+2. Paste the contents of [`zimaos/church-events.yml`](zimaos/church-events.yml).
+3. Change `APP_URL` to your Tailscale address (for example `https://zima.your-tailnet.ts.net`), then press **Install**.
+
+### Option B: with a terminal
 
 ```sh
 git clone https://github.com/Manny1994RD/EventSystem.git
 cd EventSystem
 cp .env.example .env
-nano .env          # fill in SECRET_KEY, your Tailscale address and the admin password
-docker compose up -d --build
-```
-
-The app now runs on port **8000**. The first time it starts, it creates the 5 churches (Santiago, La Vega, Moca, Jarabacoa, Puerto Plata), the event types and the admin user from `.env`.
-
-### Sharing it through Tailscale
-
-- **Tailscale Serve** makes the app reachable only by devices on your tailnet, over HTTPS:
-  `tailscale serve --bg 8000`
-- **Tailscale Funnel** opens the app to anyone with the link, which church members need for the public calendar:
-  `tailscale funnel --bg 8000`
-
-Put the address Tailscale gives you (for example `zima.your-tailnet.ts.net`) in `.env` under both `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` (with `https://` in front for the second one). Then restart:
-
-```sh
+nano .env          # only APP_URL is required
 docker compose up -d
 ```
 
-### After installing
+### Sharing it through Tailscale
 
-1. Open the link and log in with the admin username and password from `.env`.
-2. Go to **Users → Add a user** and create each person. Pick their role and their church, and give them a password.
-3. Send everyone the link. Church members get the public calendar: `https://<your address>/public/`
+- **Tailscale Funnel** opens the app to anyone with the link. Church members need this for the public calendar:
+  `tailscale funnel --bg 8000`
+- **Tailscale Serve** only lets devices on your tailnet open it:
+  `tailscale serve --bg 8000`
+
+`APP_URL` must be the address Tailscale shows you, with `https://` in front.
+
+### The first time you open it
+
+1. The app asks for a **setup code**. You'll find it in the file `setup-code.txt` in the data folder (in ZimaOS: **Files** → `AppData/church-events/data`), or in the app's log (`docker compose logs app`).
+2. Enter the code, then create your admin account.
+3. The app starts with the 5 churches (Santiago, La Vega, Moca, Jarabacoa, Puerto Plata) and the event types already set up.
+4. Go to **Users → Add a user** and create each person. Pick their role and their church, and give them a password.
+5. Send everyone the link. Church members get the public calendar: `https://<your address>/public/`
+
+A secret key is created automatically and kept in the data folder.
 
 ### Turning on email reminders
 
@@ -80,24 +88,28 @@ You can also choose to email every notification. People only get emails if their
 
 ### Data and backups
 
-Everything is stored in the folder set by `DATA_PATH` in `.env`:
+- `DATA_PATH` (default `/DATA/AppData/church-events/data`): the database (`db.sqlite3`), the flyers and photos (`media/`) and the secret key.
+- `BACKUP_PATH` (default `/DATA/AppData/church-events/backups`): one backup per day, keeping the last 14. **Point this at a different drive** (for example a USB disk) so a broken disk doesn't take the backups with it.
 
-- `db.sqlite3`: the database
-- `media/`: the flyers
-- `backups/`: one backup per day, keeping the last 14 (the `scheduler` container also sends the daily email reminders)
+The `scheduler` container makes the backups and sends the daily email reminders. ZimaOS shows each container's health (the app has a built-in health check), and restarts it if it stops.
 
-To restore a backup, stop the app (`docker compose down`), extract the backup file into `DATA_PATH`, then start it again.
+To restore a backup: stop the app, extract the backup file into `DATA_PATH`, then start the app again.
 
 ### Updating
 
 ```sh
-git pull
-docker compose up -d --build
+docker compose pull && docker compose up -d
 ```
 
-### Tech admin panel
+In ZimaOS you can also open the app's settings and press **Update** (or **Rebuild**). To update automatically every night, turn on the `updater` service at the bottom of `docker-compose.yml`.
 
-`/tech-admin/` is Django's built-in admin, for low-level fixes. Only superusers can open it.
+### Security built in
+
+- After 5 wrong passwords, that account is locked for 15 minutes.
+- Django's low-level admin (`/tech-admin/`) is **off** by default. To use it for a while, add `TECH_ADMIN_ENABLED=1` to `.env` and restart. Only superusers can open it.
+- Only the person with the setup code can create the first admin account.
+- Uploaded pictures are checked to make sure they really are pictures.
+- Every push to GitHub runs all the tests first. Dependabot opens update requests for security fixes. Django stays on version 5.2, which gets security fixes until April 2028.
 
 ## Development
 

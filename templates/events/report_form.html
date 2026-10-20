@@ -30,7 +30,7 @@
   <h3>📷 {% translate "Photos" %}</h3>
   {% if report.pk and report.photos.exists %}
     <div class="photos">{% for p in report.photos.all %}
-      <div><img src="{% url 'events:report_photo' p.pk %}" alt="">
+      <div><img src="{% url 'events:report_photo' p.pk %}?v=preview" alt="">
         <button class="btn link small" form="del-{{ p.pk }}" data-confirm="{% translate 'Remove this photo?' %}">🗑 {% translate "Remove" %}</button></div>
     {% endfor %}</div>
   {% endif %}

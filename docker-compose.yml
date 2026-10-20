@@ -1,22 +1,48 @@
+# Church Events — run with:  docker compose up -d
+# Update with:               docker compose pull && docker compose up -d
 services:
   app:
+    image: ghcr.io/manny1994rd/eventsystem:latest
     build: .
-    image: church-events:latest
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TIME_ZONE: ${TIME_ZONE:-America/Santo_Domingo}
     ports:
       - "8000:8000"
     volumes:
-      # Database, flyers and backups live here on the Zima server.
+      # Database and flyers live here on the Zima server.
       - ${DATA_PATH:-./data}:/data
+      # Daily backups. Point BACKUP_PATH at another drive (e.g. a USB disk) to be safe.
+      - ${BACKUP_PATH:-./backups}:/backups
 
   scheduler:
-    image: church-events:latest
+    image: ghcr.io/manny1994rd/eventsystem:latest
     restart: unless-stopped
-    env_file: .env
-    depends_on: [app]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TIME_ZONE: ${TIME_ZONE:-America/Santo_Domingo}
+    depends_on:
+      app:
+        condition: service_healthy
     volumes:
       - ${DATA_PATH:-./data}:/data
+      - ${BACKUP_PATH:-./backups}:/backups
     entrypoint: ["/bin/sh", "-c"]
+    healthcheck:
+      disable: true
     # Once a day: a backup (keeping the last 14) and the email reminders (they do nothing while email is off).
-    command: ["sleep 60; while true; do python manage.py backup --keep 14; python manage.py send_reminders; sleep 86400; done"]
+    command: ["while true; do python manage.py backup --keep 14; python manage.py send_reminders; sleep 86400; done"]
+
+  # Optional: updates the app by itself every night when a new version is published.
+  # Remove the "#" at the start of the next lines to turn it on.
+  # updater:
+  #   image: containrrr/watchtower
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command: --schedule "0 0 4 * * *" --cleanup

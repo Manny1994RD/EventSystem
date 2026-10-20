@@ -229,8 +229,7 @@ def event_edit(request, pk):
                 return render(request, "events/event_form.html",
                               {"form": form, "event": event, "need_override": True})
         else:
-            event.save()
-            services.log(event, user, gettext_lazy("Event details edited."))
+            services.church_update(event, user, old)
         messages.success(request, _("Changes saved."))
         return redirect("events:detail", pk=event.pk)
     return render(request, "events/event_form.html", {"form": form, "event": event})
@@ -426,6 +425,19 @@ def flyer_review(request, pk):
     return redirect("events:detail", pk=event.pk)
 
 
+def _serve(request, obj, filename, public):
+    """Send a flyer or photo. ?v=preview sends the small copy when there is one; downloads get the original."""
+    download = request.GET.get("download") == "1"
+    f = obj.preview if (request.GET.get("v") == "preview" and obj.preview and not download) else obj.file
+    try:
+        resp = FileResponse(f.open("rb"), filename=filename if f == obj.file else None, as_attachment=download)
+    except FileNotFoundError:
+        raise Http404
+    # Files never change once uploaded (a new version gets a new address), so phones can keep them.
+    resp["Cache-Control"] = ("public" if public else "private") + ", max-age=604800"
+    return resp
+
+
 def flyer_file(request, pk):
     flyer = get_object_or_404(Flyer.objects.select_related("event"), pk=pk)
     event = flyer.event
@@ -434,11 +446,7 @@ def flyer_file(request, pk):
     if not public:
         if not request.user.is_authenticated or not services.can_view(request.user, event):
             raise Http404
-    try:
-        return FileResponse(flyer.file.open("rb"), filename=flyer.original_name,
-                            as_attachment=request.GET.get("download") == "1")
-    except FileNotFoundError:
-        raise Http404
+    return _serve(request, flyer, flyer.original_name, public)
 
 
 # --- queues -----------------------------------------------------------------
@@ -604,7 +612,12 @@ def day_check(request):
         "count": len(taken),
         "limit": limit,
         "full": len(taken) >= limit,
-        "events": [{"title": e.title, "church": e.church.name, "time": e.start_time.strftime("%H:%M")} for e in taken],
+        # Other churches' events that aren't approved yet stay private: only the church name shows.
+        "events": [{
+            "title": e.title if (e.status == EventStatus.APPROVED or services.can_view(request.user, e))
+            else _("(pending)"),
+            "church": e.church.name, "time": e.start_time.strftime("%H:%M"),
+        } for e in taken],
     })
 
 
@@ -768,10 +781,7 @@ def _photo_for(user, pk):
 @login_required
 def report_photo(request, pk):
     photo = _photo_for(request.user, pk)
-    try:
-        return FileResponse(photo.file.open("rb"), as_attachment=request.GET.get("download") == "1")
-    except FileNotFoundError:
-        raise Http404
+    return _serve(request, photo, None, public=False)
 
 
 @login_required

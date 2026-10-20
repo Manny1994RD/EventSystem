@@ -6,7 +6,7 @@
   <div class="row spread"><div><strong>{{ e.title }}</strong><br><span class="small muted">{{ e.church }} · {{ e.date|date:"j M Y" }} · {% translate "Due" %} {{ e.flyer_due_date|date:"j M" }}</span></div>
   <a href="{% url 'events:detail' e.pk %}">{% translate "Open event" %} ›</a></div>
   {% with f=e.latest_flyer %}{% if f %}
-    {% if f.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}" alt="" style="max-height:380px;margin:.75rem 0">
+    {% if f.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}?v=preview" alt="" style="max-height:380px;margin:.75rem 0">
     {% else %}<p><a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}" target="_blank">📄 PDF</a></p>{% endif %}
     <p class="small muted">{% translate "Version" %} {{ f.version }} · {{ f.get_source_display }}</p>
   {% endif %}{% endwith %}

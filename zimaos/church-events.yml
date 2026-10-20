@@ -1,0 +1,79 @@
+# ZimaOS: App Store → "+" → "Install a customized app" → Import → paste this file.
+# Change APP_URL below to your Tailscale address before installing.
+name: church-events
+services:
+  app:
+    image: ghcr.io/manny1994rd/eventsystem:latest
+    container_name: church-events
+    restart: unless-stopped
+    environment:
+      APP_URL: https://zima.your-tailnet.ts.net
+      TIME_ZONE: America/Santo_Domingo
+    ports:
+      - target: 8000
+        published: "8000"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /DATA/AppData/church-events/data
+        target: /data
+      - type: bind
+        source: /DATA/AppData/church-events/backups
+        target: /backups
+    x-casaos:
+      envs:
+        - container: APP_URL
+          description:
+            en_us: The address people open (your Tailscale address, with https://)
+            es_es: La dirección que la gente abre (su dirección de Tailscale, con https://)
+      ports:
+        - container: "8000"
+          description:
+            en_us: Web page
+            es_es: Página web
+      volumes:
+        - container: /data
+          description:
+            en_us: Database and flyers
+            es_es: Base de datos y flyers
+        - container: /backups
+          description:
+            en_us: Daily backups (best on another drive)
+            es_es: Copias de seguridad diarias (mejor en otro disco)
+
+  scheduler:
+    image: ghcr.io/manny1994rd/eventsystem:latest
+    container_name: church-events-scheduler
+    restart: unless-stopped
+    environment:
+      TIME_ZONE: America/Santo_Domingo
+    depends_on:
+      - app
+    volumes:
+      - type: bind
+        source: /DATA/AppData/church-events/data
+        target: /data
+      - type: bind
+        source: /DATA/AppData/church-events/backups
+        target: /backups
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep 120; while true; do python manage.py backup --keep 14; python manage.py send_reminders; sleep 86400; done"]
+
+x-casaos:
+  architectures: [amd64, arm64]
+  main: app
+  category: Utilities
+  author: Manny1994RD
+  developer: Manny1994RD
+  index: /
+  port_map: "8000"
+  scheme: http
+  title:
+    en_us: Church Events
+    es_es: Eventos de la Iglesia
+  tagline:
+    en_us: Plan and approve the region's church events
+    es_es: Planificar y aprobar los eventos de la región
+  description:
+    en_us: Quarterly event submission, flyer review, the 2-per-day calendar, post-event reports and a public calendar.
+    es_es: Envío trimestral de eventos, revisión de flyers, calendario de 2 por día, informes y calendario público.

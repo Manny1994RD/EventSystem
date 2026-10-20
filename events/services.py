@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Role, User
 
-from . import emailing
+from . import emailing, images
 from .models import (
     SLOT_STATUSES,
     Activity,
@@ -66,7 +66,7 @@ def notify(users, event, text, /, exclude=None, **params):
     site = SiteSettings.load()
     if recipients and site.email_ready and site.email_notifications:
         # Send after the database change is saved, so a slow or failing email never breaks the action.
-        transaction.on_commit(lambda: emailing.send_to_users(
+        transaction.on_commit(lambda: emailing.send_in_background(
             recipients, ("Eventos: aviso", "Church Events: update"), es, en, event=event, site=site))
 
 
@@ -97,6 +97,14 @@ def events_on_day(date, exclude=None):
 
 def day_is_full(date, exclude=None):
     return len(events_on_day(date, exclude)) >= SiteSettings.load().max_events_per_day
+
+
+def clear_day_exception(event):
+    """An exception to the daily limit is for one specific day; it doesn't follow the event to a new date."""
+    event.limit_override = False
+    event.override_by = None
+    event.exception_requested = False
+    event.exception_reason = ""
 
 
 # --- permissions ------------------------------------------------------------
@@ -214,6 +222,8 @@ def reviewer_update(event, user, old_values, override=False):
     """A reviewer changed the event directly: applies right away, no re-approval; the church is told."""
     if not user.is_reviewer:
         raise NotAllowed
+    if old_values.get("date") != event.date:
+        clear_day_exception(event)
     if old_values.get("date") != event.date and event.status in SLOT_STATUSES:
         if day_is_full(event.date, exclude=event):
             if not override:
@@ -234,6 +244,17 @@ def reviewer_update(event, user, old_values, override=False):
         notify(church_users(event.church), event,
                _("%(user)s updated “%(title)s”: %(changes)s"), exclude=user,
                user=user, title=event.title, changes=summary)
+
+
+@transaction.atomic
+def church_update(event, user, old_values):
+    """The church edited its own draft (or an event sent back for changes)."""
+    if not can_edit(user, event) or user.is_reviewer:
+        raise NotAllowed
+    if old_values.get("date") != event.date:
+        clear_day_exception(event)
+    event.save()
+    log(event, user, _("Event details edited."))
 
 
 @transaction.atomic
@@ -263,6 +284,8 @@ def decide_change(change, user, approve, comment="", override=False):
             event.status = EventStatus.CANCELLED
         else:
             new_date = change.new_date or event.date
+            if new_date != event.date:
+                clear_day_exception(event)
             if new_date != event.date and day_is_full(new_date, exclude=event):
                 if not override:
                     raise DayFull(new_date, events_on_day(new_date, exclude=event))
@@ -304,6 +327,7 @@ def upload_flyer(event, user, uploaded_file):
         source=Flyer.Source.DESIGNER if designer_fix else Flyer.Source.CHURCH,
         uploaded_by=user,
     )
+    images.attach_preview(flyer)
     settings = SiteSettings.load()
     params = dict(title=event.title, date=fmt_date(event.date), church=event.church, version=flyer.version)
     if designer_fix and settings.auto_approve_designer_flyers:
@@ -370,7 +394,7 @@ def save_report(event, user, form, submit=False):
     report.save()
     form.save_m2m()
     for f in form.cleaned_data.get("photos") or []:
-        ReportPhoto.objects.create(report=report, file=f, uploaded_by=user)
+        images.attach_preview(ReportPhoto.objects.create(report=report, file=f, uploaded_by=user))
     if submit:
         report.status = EventReport.Status.SUBMITTED
         report.submitted_by = user

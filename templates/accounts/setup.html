@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<div class="login-box">
+  <div class="card">
+    <h1>👋 {% translate "Welcome! Let's set up the app" %}</h1>
+    <p class="muted">{% translate "Create the first administrator account. You can add everyone else afterwards." %}</p>
+    <form method="post" autocomplete="off">{% csrf_token %}
+      {% for field in form %}{% include "_field.html" %}{% endfor %}
+      <button class="btn big block">{% translate "Create my account" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -4,7 +4,8 @@
   <div class="card">
     <h1>{% translate "Log in" %}</h1>
     <p class="muted">{% translate "Use the username and password the administrator gave you." %}</p>
-    {% if form.errors %}<div class="msg error">{% translate "The username or password is not right. Try again." %}</div>{% endif %}
+    {% if form.locked_message %}<div class="msg error">{{ form.locked_message }}</div>
+    {% elif form.errors %}<div class="msg error">{% translate "The username or password is not right. Try again." %}</div>{% endif %}
     <form method="post">{% csrf_token %}
       <div class="field"><label for="id_username">{% translate "Username" %}</label>
         <input type="text" name="username" id="id_username" autocomplete="username" autocapitalize="none" required autofocus value="{{ form.username.value|default:'' }}"></div>

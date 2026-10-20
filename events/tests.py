@@ -15,7 +15,19 @@ from .models import (
 )
 
 MEDIA = tempfile.mkdtemp()
-PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 100
+
+
+def _png():
+    import io
+
+    from PIL import Image
+
+    out = io.BytesIO()
+    Image.new("RGB", (40, 60), (30, 58, 138)).save(out, "PNG")
+    return out.getvalue()
+
+
+PNG = _png()
 
 
 @override_settings(MEDIA_ROOT=MEDIA, SECURE_PROXY_SSL_HEADER=None, SESSION_COOKIE_SECURE=False,
@@ -27,6 +39,10 @@ class Base(TestCase):
         shutil.rmtree(MEDIA, ignore_errors=True)
 
     def setUp(self):
+        SiteSettings.clear_cache()
+        from django.core.cache import cache
+
+        cache.clear()
         self.santiago = Church.objects.create(name="Santiago")
         self.vega = Church.objects.create(name="La Vega")
         self.moca = Church.objects.create(name="Moca")
@@ -510,3 +526,112 @@ class EventTypeToggleTests(Base):
         self.client.force_login(self.rep)
         resp = self.client.post(reverse("events:type_toggle_report", args=[self.type.pk]))
         self.assertEqual(resp.status_code, 403)
+
+
+class HardeningTests(Base):
+    def test_login_locks_after_too_many_wrong_passwords(self):
+        url = reverse("login")
+        for _ in range(5):
+            self.client.post(url, {"username": "rep", "password": "wrong"})
+        resp = self.client.post(url, {"username": "rep", "password": "pass12345!"})
+        self.assertContains(resp, "15")  # "wait 15 minutes"
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_correct_password_resets_the_count(self):
+        url = reverse("login")
+        for _ in range(4):
+            self.client.post(url, {"username": "rep", "password": "wrong"})
+        self.client.post(url, {"username": "rep", "password": "pass12345!"})
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_exception_does_not_follow_event_to_a_new_full_day(self):
+        self.event(self.santiago, self.rep, submit=True)
+        self.event(self.vega, self.leader_vega, submit=True)
+        third = self.event(self.moca, self.rep_moca)
+        services.submit_event(third, self.rep_moca, exception_reason="Guest preacher")
+        services.review_event(third, self.regional, "approve", override=True)
+        services.review_event(third, self.regional, "changes", "move it")
+        # The church moves it to another day that is also full.
+        other_day = self.day + datetime.timedelta(days=1)
+        self.event(self.santiago, self.rep, date=other_day, submit=True)
+        self.event(self.vega, self.leader_vega, date=other_day, submit=True)
+        old = {"date": third.date, "start_time": third.start_time, "location": third.location}
+        third.date = other_day
+        services.church_update(third, self.rep_moca, old)
+        self.assertFalse(third.limit_override)
+        with self.assertRaises(services.DayFull):
+            services.submit_event(third, self.rep_moca)
+
+    def test_day_check_hides_other_churches_pending_titles(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        e.title = "Secret retreat"
+        e.save()
+        self.client.force_login(self.rep_moca)
+        data = self.client.get(reverse("events:day_check"), {"date": self.day.isoformat()}).json()
+        self.assertEqual(data["count"], 1)
+        self.assertNotIn("Secret retreat", str(data))
+        self.client.force_login(self.rep)
+        self.assertIn("Secret retreat", str(self.client.get(reverse("events:day_check"),
+                                                            {"date": self.day.isoformat()}).json()))
+
+    def test_flyer_gets_a_small_preview_and_fake_images_are_rejected(self):
+        from PIL import Image
+        import io
+
+        big = io.BytesIO()
+        Image.new("RGB", (3000, 4000), "white").save(big, "JPEG")
+        e = self.event(self.santiago, self.rep, submit=True)
+        self.client.force_login(self.rep)
+        self.client.post(reverse("events:flyer_upload", args=[e.pk]),
+                         {"file": SimpleUploadedFile("flyer.jpg", big.getvalue())})
+        flyer = e.flyers.get()
+        with Image.open(flyer.preview.open("rb")) as img:
+            self.assertLessEqual(max(img.size), 1400)
+        resp = self.client.get(reverse("events:flyer_file", args=[flyer.pk]), {"v": "preview"})
+        self.assertEqual(resp.status_code, 200)
+        self.client.post(reverse("events:flyer_upload", args=[e.pk]),
+                         {"file": SimpleUploadedFile("evil.png", b"<html>not a picture</html>")})
+        self.assertEqual(e.flyers.count(), 1)
+
+    def test_secret_key_placeholder_is_refused(self):
+        import os
+        from unittest import mock
+
+        from django.core.exceptions import ImproperlyConfigured
+
+        from config import settings as conf
+
+        with mock.patch.dict(os.environ, {"SECRET_KEY": "change-me"}):
+            with self.assertRaises(ImproperlyConfigured):
+                conf._load_secret_key()
+
+    def test_tech_admin_is_off_by_default(self):
+        self.assertEqual(self.client.get("/tech-admin/").status_code, 404)
+
+
+@override_settings(SECURE_PROXY_SSL_HEADER=None, SESSION_COOKIE_SECURE=False, CSRF_COOKIE_SECURE=False)
+class FirstRunSetupTests(TestCase):
+    def setUp(self):
+        from accounts import setup as first_run
+
+        first_run._users_exist = False
+        (first_run.settings.DATA_DIR / first_run.CODE_FILE).unlink(missing_ok=True)
+
+    def test_setup_needs_the_code_then_creates_the_admin(self):
+        from accounts import setup as first_run
+
+        self.assertRedirects(self.client.get("/"), reverse("setup"))
+        code = first_run.setup_code()
+        data = {"first_name": "Tech", "username": "admin", "password1": "una-clave-muy-larga",
+                "password2": "una-clave-muy-larga"}
+        self.client.post(reverse("setup"), {**data, "code": "WRONG"})
+        self.assertFalse(User.objects.exists())
+        resp = self.client.post(reverse("setup"), {**data, "code": code.lower()})
+        self.assertRedirects(resp, reverse("users"))
+        admin = User.objects.get(username="admin")
+        self.assertTrue(admin.is_superuser and admin.can_manage)
+        self.assertFalse((first_run.settings.DATA_DIR / first_run.CODE_FILE).exists())
+        self.assertRedirects(self.client.get(reverse("setup")), reverse("login"), fetch_redirect_response=False)
+
+    def test_health_check_works_before_setup(self):
+        self.assertEqual(self.client.get("/healthz").status_code, 200)

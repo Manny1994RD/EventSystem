@@ -8,7 +8,7 @@
   <p><strong>📅 {{ event.date|date:"l j F Y" }}</strong><br>🕒 {{ event.start_time|time:"g:i A" }}{% if event.end_time %} – {{ event.end_time|time:"g:i A" }}{% endif %}</p>
   <p>📍 {{ event.location }}</p>
   <p>{{ event.description|linebreaksbr }}</p>
-  {% if flyer %}{% if flyer.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' flyer.pk %}" alt="flyer">
+  {% if flyer %}{% if flyer.is_image %}<img class="flyer-preview" src="{% url 'events:flyer_file' flyer.pk %}?v=preview" alt="flyer">
   {% else %}<a class="btn ghost" href="{% url 'events:flyer_file' flyer.pk %}" target="_blank">📄 {% translate "Open flyer (PDF)" %}</a>{% endif %}{% endif %}
 </div>
 {% endblock %}

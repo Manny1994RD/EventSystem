@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from . import images
 from .models import ChangeRequest, Church, Event, EventReport, EventType, Quarter, SiteSettings
 
 ALLOWED_FLYER_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".pdf"}
@@ -73,6 +74,8 @@ class FlyerUploadForm(forms.Form):
             raise forms.ValidationError(_("Please upload a picture (JPG, PNG) or a PDF."))
         if f.size > settings.MAX_FLYER_MB * 1024 * 1024:
             raise forms.ValidationError(_("The file is too big (max %(mb)s MB).") % {"mb": settings.MAX_FLYER_MB})
+        if images.is_image_name(f.name) and not images.check_image(f):
+            raise forms.ValidationError(_("This picture could not be opened. Please try another file."))
         return f
 
 
@@ -240,4 +243,6 @@ class EventReportForm(forms.ModelForm):
             if f.size > settings.MAX_FLYER_MB * 1024 * 1024:
                 raise forms.ValidationError(_("“%(name)s” is too big (max %(mb)s MB).")
                                             % {"name": f.name, "mb": settings.MAX_FLYER_MB})
+            if not images.check_image(f):
+                raise forms.ValidationError(_("“%(name)s” is not a photo.") % {"name": f.name})
         return files

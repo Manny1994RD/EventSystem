@@ -38,6 +38,17 @@ class Command(BaseCommand):
                 EventType.objects.create(name_es=es, name_en=en, full_report=(en in ("Bible social", "Seminar")))
             self.stdout.write("Created event types.")
 
+        from accounts import setup as first_run
+
+        if not User.objects.exists() and not os.environ.get("ADMIN_USERNAME"):
+            code = first_run.setup_code()
+            self.stdout.write(self.style.WARNING(
+                "\n================================================================\n"
+                f"  FIRST-TIME SETUP CODE:  {code}\n"
+                "  Open the app in your browser and enter this code to create\n"
+                "  the first admin account. (Also saved in setup-code.txt.)\n"
+                "================================================================\n"))
+
         username = os.environ.get("ADMIN_USERNAME")
         password = os.environ.get("ADMIN_PASSWORD")
         if username and password and not User.objects.filter(username=username).exists():

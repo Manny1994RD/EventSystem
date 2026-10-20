@@ -8,10 +8,49 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR / "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = os.environ.get("DEBUG", "0") == "1"
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+
+def _load_secret_key():
+    """Use SECRET_KEY from the environment, or create one the first time and keep it in DATA_DIR."""
+    from django.core.exceptions import ImproperlyConfigured
+
+    key = os.environ.get("SECRET_KEY", "").strip()
+    placeholders = {"change-me", "changeme", "secret", "dev-only-insecure-key-change-me"}
+    if key:
+        if key.lower() in placeholders or len(key) < 32:
+            raise ImproperlyConfigured(
+                "SECRET_KEY in .env is a placeholder or too short. Delete that line to have one created "
+                "automatically, or paste a long random value."
+            )
+        return key
+    path = DATA_DIR / "secret_key"
+    if path.exists():
+        return path.read_text().strip()
+    import secrets
+
+    key = secrets.token_urlsafe(50)
+    path.write_text(key)
+    path.chmod(0o600)
+    return key
+
+
+SECRET_KEY = _load_secret_key()
+
+# The address people open, e.g. https://zima.your-tailnet.ts.net. Hosts and trusted origins come from it.
+APP_URL = os.environ.get("APP_URL", "").strip().rstrip("/")
+_hosts = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
+_origins = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+if APP_URL:
+    from urllib.parse import urlparse
+
+    _hosts.append(urlparse(APP_URL).hostname)
+    _origins.append(APP_URL)
+ALLOWED_HOSTS = _hosts + ["localhost", "127.0.0.1"]
+CSRF_TRUSTED_ORIGINS = _origins
+
+# The low-level Django admin is off unless the tech admin turns it on for a while.
+TECH_ADMIN_ENABLED = os.environ.get("TECH_ADMIN_ENABLED", "0") == "1"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -26,12 +65,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "events.middleware.SettingsCacheMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.setup.FirstRunMiddleware",
     "accounts.middleware.UserLanguageMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -61,7 +102,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": DATA_DIR / "db.sqlite3",
-        "OPTIONS": {"init_command": "PRAGMA journal_mode=WAL;"},
+        # IMMEDIATE makes each change take the write lock up front, so two churches can't both
+        # grab the last spot on a day at the same moment.
+        "OPTIONS": {"init_command": "PRAGMA journal_mode=WAL;", "transaction_mode": "IMMEDIATE", "timeout": 20},
     }
 }
 
@@ -103,3 +146,13 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
+
+# Shared by all app processes, so the login lockout counts every attempt.
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.filebased.FileBasedCache", "LOCATION": DATA_DIR / "cache"}
+}
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCKOUT_SECONDS = 15 * 60
+
+BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", DATA_DIR / "backups"))
+MAX_FLYER_PREVIEW_PX = 1400

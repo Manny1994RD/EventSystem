@@ -1,5 +1,6 @@
 import datetime
 import os
+import threading
 import uuid
 
 from django.conf import settings
@@ -7,6 +8,9 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
+
+
+_settings_cache = threading.local()
 
 
 class Church(models.Model):
@@ -81,8 +85,20 @@ class SiteSettings(models.Model):
 
     @classmethod
     def load(cls):
-        obj, _created = cls.objects.get_or_create(pk=1)
+        # Read once per request (the cache is cleared by SettingsCacheMiddleware) instead of on every use.
+        obj = getattr(_settings_cache, "obj", None)
+        if obj is None:
+            obj, _created = cls.objects.get_or_create(pk=1)
+            _settings_cache.obj = obj
         return obj
+
+    @staticmethod
+    def clear_cache():
+        _settings_cache.obj = None
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        _settings_cache.obj = None
 
 
 class Quarter(models.Model):
@@ -260,6 +276,7 @@ class Flyer(models.Model):
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="flyers")
     file = models.FileField(upload_to=flyer_path)
+    preview = models.FileField(upload_to=flyer_path, blank=True)
     original_name = models.CharField(max_length=255)
     version = models.PositiveSmallIntegerField(default=1)
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.CHURCH)
@@ -388,6 +405,7 @@ def report_photo_path(instance, filename):
 class ReportPhoto(models.Model):
     report = models.ForeignKey(EventReport, on_delete=models.CASCADE, related_name="photos")
     file = models.FileField(upload_to=report_photo_path)
+    preview = models.FileField(upload_to=report_photo_path, blank=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

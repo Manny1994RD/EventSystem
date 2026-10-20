@@ -12,7 +12,7 @@
     {% for s in slides %}{% with e=s.event %}
     <article class="slide" style="--church:{{ e.church.color }}">
       <div class="slide-art">
-        {% if s.flyer and s.flyer.is_image %}<img src="{% url 'events:flyer_file' s.flyer.pk %}" alt="{{ e.title }}" loading="lazy">
+        {% if s.flyer and s.flyer.is_image %}<img src="{% url 'events:flyer_file' s.flyer.pk %}?v=preview" alt="{{ e.title }}" loading="lazy">
         {% else %}<div class="slide-placeholder"><span>{{ e.event_type }}</span><strong>{{ e.title }}</strong></div>{% endif %}
       </div>
       <div class="slide-info">

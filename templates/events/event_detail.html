@@ -141,7 +141,7 @@
     {% elif event.flyer_alert == 'due' %}<div class="msg warning small">{% translate "The flyer is due. Please upload it soon." %}</div>{% endif %}
     {% with f=event.latest_flyer %}
     {% if f %}
-      {% if f.is_image %}<a href="{% url 'events:flyer_file' f.pk %}" target="_blank"><img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}" alt="flyer"></a>
+      {% if f.is_image %}<a href="{% url 'events:flyer_file' f.pk %}" target="_blank"><img class="flyer-preview" src="{% url 'events:flyer_file' f.pk %}?v=preview" alt="flyer"></a>
       {% else %}<a class="btn ghost" href="{% url 'events:flyer_file' f.pk %}" target="_blank">📄 {% translate "Open flyer (PDF)" %}</a>{% endif %}
       <p class="small muted">{% translate "Version" %} {{ f.version }} · {{ f.get_source_display }} · {{ f.uploaded_at|date:"j M, g:i A" }}</p>
       {% if event.flyer_status == 'designer' and f.review_notes %}
@@ -183,7 +183,7 @@
     {% include "events/_report_stats.html" with r=report full=report.full %}
     {% if report.supporting_churches.all %}<p class="small"><strong>{% translate "Churches that supported" %}:</strong> {{ report.supporting_churches.all|join:", " }}</p>{% endif %}
     {% if report.fragrance %}<div class="msg info"><strong>🌸 {% translate "Fragrance" %}:</strong> {{ report.fragrance|linebreaksbr }}</div>{% endif %}
-    {% if report.photos.all %}<div class="photos">{% for p in report.photos.all %}<a href="{% url 'events:report_photo' p.pk %}" target="_blank"><img src="{% url 'events:report_photo' p.pk %}" alt=""></a>{% endfor %}</div>{% endif %}
+    {% if report.photos.all %}<div class="photos">{% for p in report.photos.all %}<a href="{% url 'events:report_photo' p.pk %}" target="_blank"><img src="{% url 'events:report_photo' p.pk %}?v=preview" alt=""></a>{% endfor %}</div>{% endif %}
     {% if user.is_reviewer %}
       <details><summary>{% translate "Something is wrong? Send it back for corrections" %}</summary>
         <form method="post" action="{% url 'events:report_return' event.pk %}">{% csrf_token %}

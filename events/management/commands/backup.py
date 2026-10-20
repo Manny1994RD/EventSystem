@@ -15,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument("--keep", type=int, default=14)
 
     def handle(self, *args, keep, **options):
-        out_dir = Path(settings.DATA_DIR) / "backups"
+        out_dir = Path(settings.BACKUP_DIR)
         out_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         work = out_dir / f"tmp-{stamp}"

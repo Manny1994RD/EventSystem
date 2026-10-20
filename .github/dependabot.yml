@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Stay on Django 5.2 (long-term support, security fixes until April 2028).
+      # Move to the next long-term version (6.2) on purpose, not automatically.
+      - dependency-name: django
+        versions: [">=6.0"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -9,8 +9,12 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from .forms import ProfileForm, UserForm
-from .models import User
+from django.contrib.auth import login
+from django.http import HttpResponse
+
+from . import setup as first_run
+from .forms import FirstAdminForm, ProfileForm, UserForm
+from .models import Role, User
 
 
 def manager_required(view):
@@ -78,3 +82,27 @@ def user_edit(request, pk=None):
             messages.success(request, _("User saved."))
             return redirect("users")
     return render(request, "accounts/user_form.html", {"form": form, "target": target})
+
+
+def setup(request):
+    """Create the first admin account (only while the app has no accounts)."""
+    if first_run.users_exist():
+        return redirect("login")
+    form = FirstAdminForm(request.POST or None, expected_code=first_run.setup_code())
+    if request.method == "POST" and form.is_valid():
+        user = User.objects.create_superuser(
+            username=form.cleaned_data["username"], password=form.cleaned_data["password1"],
+            first_name=form.cleaned_data["first_name"], role=Role.TECH_ADMIN, is_app_admin=True,
+            language=translation.get_language() or "es",
+        )
+        first_run.finish_setup()
+        login(request, user)
+        messages.success(request, _("Welcome! Next, add the churches' users in “Users”."))
+        return redirect("users")
+    return render(request, "accounts/setup.html", {"form": form})
+
+
+def healthz(request):
+    """Used by Docker / ZimaOS to see that the app is up."""
+    User.objects.exists()
+    return HttpResponse("ok", content_type="text/plain")
