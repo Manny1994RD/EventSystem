@@ -156,10 +156,16 @@ Cancellations follow the same rule. The calendar limit is checked again whenever
 | Daily limit | 2 per day across the whole region. A church can ask for an exception; a reviewer approves it. |
 | Ease of use | Big buttons, a to-do list on the home screen, a step tracker on each event, a live "is this day free?" check, and confirmation before anything is deleted |
 
-## 14. Still open
+## 14. Decisions (round 4)
 
-1. Can the Regional Events Rep also review flyers when the Overseer is away? (Right now only the Overseer can.)
-2. Should church members be able to see other churches' contact phone numbers on the public calendar? (Right now they can't.)
-3. WhatsApp: when you're ready, should messages go to one group for the whole region, or one group per church?
-4. Should the app send email reminders before the quarter deadline? (It needs an email account to send from.)
-5. Post-event reports (attendance, photos): do you want them in a later phase?
+| Topic | Decision |
+|---|---|
+| Who reviews flyers | The Overseer **or** the Regional Events Rep. Either one can approve or send to the designer. |
+| Public calendar | Public, with no contact phone numbers |
+| WhatsApp (later) | One group chat for the whole region |
+| Email | Built but **off**. When ready, an admin enters the Regional Events Rep's email in Settings → Email reminders, turns it on, and sends a test. |
+
+## 15. Still open
+
+1. WhatsApp group messages: a separate project, for later.
+2. Post-event reports (attendance, photos): do you want them in a later phase?

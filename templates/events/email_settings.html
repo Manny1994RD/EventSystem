@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<p><a href="{% url 'events:settings' %}">‹ {% translate "Settings" %}</a></p>
+<h1>✉️ {% translate "Email reminders" %}</h1>
+<div class="msg info small">
+  {% translate "Email is off until you turn it on. When you're ready, enter the email to send from (for example the Regional Events Rep's), turn on “send emails”, then press “Save and send me a test email”." %}<br>
+  {% translate "For Gmail: turn on 2-step verification on that account, then create an “app password” at myaccount.google.com/apppasswords and paste it here." %}
+</div>
+<form method="post" class="card" autocomplete="off">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="msg error">{{ e }}</div>{% endfor %}
+  {% include "_field.html" with field=form.email_enabled %}
+  <div class="form-grid">
+    {% include "_field.html" with field=form.email_from %}
+    {% include "_field.html" with field=form.smtp_username %}
+    {% include "_field.html" with field=form.smtp_password %}
+  </div>
+  {% if site.smtp_password %}<p class="small muted">🔒 {% translate "A password is saved." %}</p>{% endif %}
+  {% include "_field.html" with field=form.site_url %}
+  {% include "_field.html" with field=form.email_reminders %}
+  {% include "_field.html" with field=form.email_notifications %}
+  <details><summary>{% translate "Advanced (email server)" %}</summary>
+    <div class="form-grid">
+      {% include "_field.html" with field=form.smtp_host %}
+      {% include "_field.html" with field=form.smtp_port %}
+    </div>
+  </details>
+  <p class="small muted">{% translate "Reminders go out once a day: 14, 7, 2 and 0 days before the quarter deadline (to churches that haven't sent everything), and on the flyer due date and final deadline. Each person needs an email on their account." %}</p>
+  <div class="row">
+    <button class="btn">{% translate "Save" %}</button>
+    <button class="btn ghost" name="test" value="1">📨 {% translate "Save and send me a test email" %}</button>
+  </div>
+</form>
+{% endblock %}

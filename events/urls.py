@@ -34,6 +34,7 @@ urlpatterns = [
     path("reports/excel/", reports.report_excel, name="report_excel"),
     path("reports/pdf/", reports.report_pdf, name="report_pdf"),
     path("settings/", views.settings_home, name="settings"),
+    path("settings/email/", views.email_settings, name="email_settings"),
     path("settings/churches/new/", views.church_edit, name="church_new"),
     path("settings/churches/<int:pk>/", views.church_edit, name="church_edit"),
     path("settings/types/new/", views.event_type_edit, name="type_new"),

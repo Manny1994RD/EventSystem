@@ -151,3 +151,29 @@ class ReportFilterForm(forms.Form):
             c for c in EventStatus.choices if c[0] != EventStatus.DRAFT
         ]
         self.fields["quarter"].label_from_instance = lambda q: q.label
+
+
+class EmailSettingsForm(forms.ModelForm):
+    smtp_password = forms.CharField(
+        label=_("email password"), required=False, widget=forms.PasswordInput(render_value=False),
+        help_text=_("For Gmail, use an “app password”, not the normal password. Leave empty to keep the saved one."),
+    )
+
+    class Meta:
+        model = SiteSettings
+        fields = ["email_enabled", "email_from", "smtp_username", "smtp_password", "smtp_host", "smtp_port",
+                  "site_url", "email_reminders", "email_notifications"]
+
+    def clean(self):
+        data = super().clean()
+        if data.get("email_enabled") and not data.get("email_from"):
+            self.add_error("email_from", _("Enter the email to send from before turning email on."))
+        return data
+
+    def save(self, commit=True):
+        site = super().save(commit=False)
+        if not self.cleaned_data.get("smtp_password"):
+            site.smtp_password = SiteSettings.objects.get(pk=site.pk).smtp_password
+        if commit:
+            site.save()
+        return site

@@ -47,12 +47,33 @@ class SiteSettings(models.Model):
     )
     auto_approve_designer_flyers = models.BooleanField(
         _("approve the designer's fixed flyer automatically"), default=False,
-        help_text=_("If off, the Overseer gives the final OK after the designer uploads the fix."),
+        help_text=_("If off, the Overseer or Regional Events Rep gives the final OK after the designer uploads the fix."),
     )
+
+    # Email stays off until an admin enters an account to send from and turns it on.
+    email_enabled = models.BooleanField(_("send emails"), default=False)
+    email_from = models.EmailField(_("send from this email"), blank=True,
+                                   help_text=_("For example the Regional Events Rep's email."))
+    smtp_host = models.CharField(_("email server"), max_length=100, default="smtp.gmail.com")
+    smtp_port = models.PositiveIntegerField(_("email server port"), default=587)
+    smtp_username = models.CharField(_("email username"), max_length=150, blank=True,
+                                     help_text=_("Usually the same email address."))
+    smtp_password = models.CharField(_("email password"), max_length=200, blank=True,
+                                     help_text=_("For Gmail, use an “app password”, not the normal password."))
+    email_reminders = models.BooleanField(_("send deadline reminders"), default=True,
+                                          help_text=_("Quarter deadline and flyer deadline reminders."))
+    email_notifications = models.BooleanField(_("also email every notification"), default=False,
+                                              help_text=_("Approvals, changes, flyers… (only to people with an email)."))
+    site_url = models.URLField(_("app address"), blank=True,
+                               help_text=_("Used for links in emails, e.g. https://zima.your-tailnet.ts.net"))
 
     class Meta:
         verbose_name = _("settings")
         verbose_name_plural = _("settings")
+
+    @property
+    def email_ready(self):
+        return self.email_enabled and bool(self.email_from and self.smtp_host)
 
     @classmethod
     def load(cls):
@@ -137,7 +158,7 @@ SLOT_STATUSES = [EventStatus.SUBMITTED, EventStatus.CHANGES, EventStatus.APPROVE
 
 class FlyerStatus(models.TextChoices):
     NONE = "none", _("No flyer yet")
-    PENDING = "pending", _("Waiting for Overseer")
+    PENDING = "pending", _("Waiting for flyer review")
     DESIGNER = "designer", _("With the designer")
     APPROVED = "approved", _("Flyer approved")
 
@@ -307,3 +328,10 @@ class Notification(models.Model):
     @property
     def text(self):
         return self.text_en if get_language() == "en" else self.text_es
+
+
+class ReminderLog(models.Model):
+    """Remembers which reminders were already emailed so nobody gets the same one twice."""
+
+    key = models.CharField(max_length=200, unique=True)
+    sent_at = models.DateTimeField(auto_now_add=True)

@@ -13,10 +13,11 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
 
-from . import services
+from . import emailing, services
 from .forms import (
     ChangeRequestForm,
     ChurchForm,
+    EmailSettingsForm,
     EventForm,
     EventTypeForm,
     FlyerUploadForm,
@@ -596,7 +597,7 @@ def settings_home(request):
     quarters = [current.previous(), current, current.next(), current.next().next()]
     return render(request, "events/settings.html", {
         "form": form, "churches": Church.objects.annotate(n_users=Count("users")),
-        "types": EventType.objects.all(), "quarters": quarters,
+        "types": EventType.objects.all(), "quarters": quarters, "site": site,
     })
 
 
@@ -634,3 +635,28 @@ def quarter_edit(request, pk):
         return redirect("events:settings")
     return render(request, "events/simple_form.html", {
         "form": form, "title": _("Submission deadline for %(q)s") % {"q": quarter.label}})
+
+
+@manager_required
+def email_settings(request):
+    site = SiteSettings.load()
+    form = EmailSettingsForm(request.POST or None, instance=site)
+    if request.method == "POST" and form.is_valid():
+        site = form.save()
+        if "test" in request.POST:
+            if not site.email_ready:
+                messages.error(request, _("Turn on “send emails” and enter the email to send from first."))
+            elif not request.user.email:
+                messages.error(request, _("Add your own email in “My account” to receive the test."))
+            else:
+                try:
+                    emailing.send_to_users([request.user], ("Prueba de correo", "Test email"),
+                                           "Si recibe esto, los correos funcionan. ✅",
+                                           "If you got this, email is working. ✅", site=site, raise_errors=True)
+                    messages.success(request, _("Test email sent to %(email)s.") % {"email": request.user.email})
+                except Exception as exc:
+                    messages.error(request, _("The email could not be sent: %(error)s") % {"error": exc})
+        else:
+            messages.success(request, _("Settings saved."))
+        return redirect("events:email_settings")
+    return render(request, "events/email_settings.html", {"form": form, "site": site})

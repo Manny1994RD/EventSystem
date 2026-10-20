@@ -10,7 +10,7 @@ services:
       # Database, flyers and backups live here on the Zima server.
       - ${DATA_PATH:-./data}:/data
 
-  backup:
+  scheduler:
     image: church-events:latest
     restart: unless-stopped
     env_file: .env
@@ -18,5 +18,5 @@ services:
     volumes:
       - ${DATA_PATH:-./data}:/data
     entrypoint: ["/bin/sh", "-c"]
-    # One backup a day, keeping the last 14.
-    command: ["sleep 60; while true; do python manage.py backup --keep 14; sleep 86400; done"]
+    # Once a day: a backup (keeping the last 14) and the email reminders (they do nothing while email is off).
+    command: ["sleep 60; while true; do python manage.py backup --keep 14; python manage.py send_reminders; sleep 86400; done"]

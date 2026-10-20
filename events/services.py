@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Role, User
 
+from . import emailing
 from .models import (
     SLOT_STATUSES,
     Activity,
@@ -53,19 +54,26 @@ def log(event, actor, text, /, **params):
 def notify(users, event, text, /, exclude=None, **params):
     es, en = both_languages(text, **params)
     seen = set()
+    recipients = []
     for user in users:
         if user.pk in seen or (exclude is not None and user.pk == exclude.pk) or not user.is_active:
             continue
         seen.add(user.pk)
+        recipients.append(user)
         Notification.objects.create(user=user, event=event, text_es=es, text_en=en)
+    site = SiteSettings.load()
+    if recipients and site.email_ready and site.email_notifications:
+        # Send after the database change is saved, so a slow or failing email never breaks the action.
+        transaction.on_commit(lambda: emailing.send_to_users(
+            recipients, ("Eventos: aviso", "Church Events: update"), es, en, event=event, site=site))
 
 
 def reviewers():
     return User.objects.filter(is_active=True, role__in=[Role.REGIONAL_REP, Role.OVERSEER])
 
 
-def overseers():
-    return User.objects.filter(is_active=True, role=Role.OVERSEER)
+def flyer_reviewers():
+    return User.objects.filter(is_active=True, role__in=[Role.REGIONAL_REP, Role.OVERSEER])
 
 
 def designers():
@@ -299,20 +307,20 @@ def upload_flyer(event, user, uploaded_file):
     if designer_fix and settings.auto_approve_designer_flyers:
         event.flyer_status = FlyerStatus.APPROVED
         log(event, user, _("Designer uploaded the fixed flyer (version %(version)s). Approved automatically."), **params)
-        notify(list(church_users(event.church)) + list(overseers()), event,
+        notify(list(church_users(event.church)) + list(flyer_reviewers()), event,
                _("The fixed flyer for “%(title)s” is ready and approved."), exclude=user, **params)
     elif designer_fix:
         event.flyer_status = FlyerStatus.PENDING
         log(event, user, _("Designer uploaded the fixed flyer (version %(version)s)."), **params)
-        notify(overseers(), event, _("The designer fixed the flyer for “%(title)s” (%(church)s). It needs your final OK."),
+        notify(flyer_reviewers(), event, _("The designer fixed the flyer for “%(title)s” (%(church)s). It needs your final OK."),
                exclude=user, **params)
     elif user.can_review_flyers:
         event.flyer_status = FlyerStatus.APPROVED
-        log(event, user, _("Flyer uploaded by the Overseer (version %(version)s)."), **params)
+        log(event, user, _("Flyer uploaded and approved by %(user)s (version %(version)s)."), user=user, **params)
     else:
         event.flyer_status = FlyerStatus.PENDING
         log(event, user, _("Flyer uploaded (version %(version)s)."), **params)
-        notify(overseers(), event, _("New flyer from %(church)s for “%(title)s” (%(date)s) to review."),
+        notify(flyer_reviewers(), event, _("New flyer from %(church)s for “%(title)s” (%(date)s) to review."),
                exclude=user, **params)
     event.save()
     return flyer

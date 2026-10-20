@@ -6,6 +6,10 @@
   <div class="form-grid">{% for field in form %}{% include "_field.html" %}{% endfor %}</div>
   <button class="btn">{% translate "Save" %}</button>
 </form>
+<a class="card row spread" href="{% url 'events:email_settings' %}" style="text-decoration:none;color:inherit">
+  <span><strong>✉️ {% translate "Email reminders" %}</strong><br><span class="small muted">{% translate "Send deadline reminders and notifications by email." %}</span></span>
+  {% if site.email_ready %}<span class="badge b-approved">{% translate "On" %}</span>{% else %}<span class="badge b-none">{% translate "Off" %}</span>{% endif %}
+</a>
 <div class="grid">
   <div class="card">
     <div class="row spread"><h2 style="margin:0">{% translate "Churches" %}</h2><a class="btn ghost" href="{% url 'events:church_new' %}">＋ {% translate "Add" %}</a></div>

@@ -46,7 +46,8 @@ class User(AbstractUser):
 
     @property
     def can_review_flyers(self):
-        return self.role == Role.OVERSEER
+        """Either the Overseer or the Regional Events Rep can review flyers."""
+        return self.role in REVIEWER_ROLES
 
     @property
     def is_designer(self):

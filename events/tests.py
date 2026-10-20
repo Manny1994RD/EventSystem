@@ -170,11 +170,15 @@ class FlyerTests(Base):
         self.upload(e, self.designer)
         self.assertEqual(e.flyer_status, FlyerStatus.APPROVED)
 
-    def test_only_overseer_reviews_flyers(self):
+    def test_regional_rep_or_overseer_review_flyers(self):
         e = self.event(self.santiago, self.rep, submit=True)
         self.upload(e, self.rep)
-        with self.assertRaises(services.NotAllowed):
-            services.review_flyer(e, self.regional, approve=True)
+        self.assertTrue(Notification.objects.filter(user=self.regional, text_en__contains="New flyer").exists())
+        for user in (self.rep, self.designer):
+            with self.assertRaises(services.NotAllowed):
+                services.review_flyer(e, user, approve=True)
+        services.review_flyer(e, self.regional, approve=True)
+        self.assertEqual(e.flyer_status, FlyerStatus.APPROVED)
 
     def test_flyer_alerts(self):
         e = self.event(self.santiago, self.rep, date=timezone.localdate() + datetime.timedelta(days=10),
@@ -224,6 +228,15 @@ class PageTests(Base):
         self.assertEqual(self.client.get(reverse("events:regional")).status_code, 403)
         self.assertEqual(self.client.get(reverse("users")).status_code, 403)
 
+    def test_public_event_hides_contact_phone(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        e.contact_phone = "809-555-7777"
+        e.save()
+        services.review_event(e, self.regional, "approve")
+        resp = self.client.get(reverse("events:public_event", args=[e.pk]))
+        self.assertContains(resp, e.title)
+        self.assertNotContains(resp, "809-555-7777")
+
     def test_public_calendar_shows_only_approved(self):
         a = self.event(self.santiago, self.rep, submit=True)
         services.review_event(a, self.regional, "approve")
@@ -264,3 +277,77 @@ class PageTests(Base):
         })
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(User.objects.filter(username="x").exists())
+
+
+class EmailTests(Base):
+    def turn_on(self, **extra):
+        s = SiteSettings.load()
+        s.email_enabled = True
+        s.email_from = "regional@example.com"
+        for k, v in extra.items():
+            setattr(s, k, v)
+        s.save()
+
+    def test_email_is_off_by_default(self):
+        from django.core import mail
+        from django.core.management import call_command
+
+        self.rep.email = "rep@example.com"
+        self.rep.save()
+        self.event(self.santiago, self.rep, submit=True)
+        call_command("send_reminders", stdout=open("/dev/null", "w"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_notifications_are_emailed_in_each_persons_language(self):
+        from django.core import mail
+
+        self.turn_on(email_notifications=True)
+        self.regional.email, self.regional.language = "r@example.com", "en"
+        self.regional.save()
+        self.overseer.email, self.overseer.language = "o@example.com", "es"
+        self.overseer.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.event(self.santiago, self.rep, submit=True)
+        bodies = {m.to[0]: m.body for m in mail.outbox}
+        self.assertIn("sent", bodies["r@example.com"])
+        self.assertIn("envió", bodies["o@example.com"])
+
+    def test_quarter_deadline_reminder_sent_once(self):
+        from django.core import mail
+        from django.core.management import call_command
+
+        from .models import Quarter
+
+        self.turn_on()
+        self.rep.email = "rep@example.com"
+        self.rep.save()
+        q = Quarter.current().next()
+        q.submission_deadline = timezone.localdate() + datetime.timedelta(days=7)
+        q.save()
+        call_command("send_reminders", stdout=open("/dev/null", "w"))
+        call_command("send_reminders", stdout=open("/dev/null", "w"))
+        self.assertEqual([m.to for m in mail.outbox], [["rep@example.com"]])
+        self.assertIn("Santiago", mail.outbox[0].body)
+
+    def test_flyer_due_reminder(self):
+        from django.core import mail
+        from django.core.management import call_command
+
+        self.turn_on()
+        self.rep.email = "rep@example.com"
+        self.rep.save()
+        self.event(self.santiago, self.rep, date=timezone.localdate() + datetime.timedelta(days=14), submit=True)
+        call_command("send_reminders", stdout=open("/dev/null", "w"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("flyer", mail.outbox[0].body.lower())
+
+    def test_email_settings_page_keeps_saved_password(self):
+        self.turn_on(smtp_password="secret-app-pass")
+        self.client.force_login(self.regional)
+        resp = self.client.post(reverse("events:email_settings"), {
+            "email_enabled": "on", "email_from": "regional@example.com", "smtp_host": "smtp.gmail.com",
+            "smtp_port": 587, "email_reminders": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(SiteSettings.load().smtp_password, "secret-app-pass")
+        self.assertNotContains(self.client.get(reverse("events:email_settings")), "secret-app-pass")
