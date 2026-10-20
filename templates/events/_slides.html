@@ -1,0 +1,41 @@
+{% load i18n %}
+<section class="upcoming" data-autorefresh="300">
+  <div class="row spread">
+    <h2 style="margin:0">⭐ {% translate "Coming up — invite someone!" %}</h2>
+    {% if slides|length > 1 %}<div class="row" style="gap:.4rem">
+      <button type="button" class="btn ghost slide-prev" aria-label="{% translate 'Previous' %}">‹</button>
+      <button type="button" class="btn ghost slide-next" aria-label="{% translate 'Next' %}">›</button>
+    </div>{% endif %}
+  </div>
+  {% if slides %}
+  <div class="slides" tabindex="0">
+    {% for s in slides %}{% with e=s.event %}
+    <article class="slide" style="--church:{{ e.church.color }}">
+      <div class="slide-art">
+        {% if s.flyer and s.flyer.is_image %}<img src="{% url 'events:flyer_file' s.flyer.pk %}" alt="{{ e.title }}" loading="lazy">
+        {% else %}<div class="slide-placeholder"><span>{{ e.event_type }}</span><strong>{{ e.title }}</strong></div>{% endif %}
+      </div>
+      <div class="slide-info">
+        <div class="row" style="gap:.35rem">
+          <span class="badge b-submitted">{{ s.week }}</span>
+          {% if s.is_today %}<span class="badge b-approved">🎉 {% translate "Today!" %}</span>{% endif %}
+        </div>
+        <h3 class="slide-title">{{ e.title }}</h3>
+        <p class="muted small" style="margin:0"><span class="dot" style="background:{{ e.church.color }}"></span>{{ e.church }} · {{ e.event_type }}</p>
+        <p class="slide-when">📅 <strong style="text-transform:capitalize">{{ e.date|date:"l j F" }}</strong><br>🕒 {{ e.start_time|time:"g:i A" }}{% if e.end_time %} – {{ e.end_time|time:"g:i A" }}{% endif %}</p>
+        <p>📍 {{ e.location }}</p>
+        <div class="slide-actions">
+          <a class="btn whatsapp" href="{{ s.whatsapp }}" target="_blank" rel="noopener">💬 {% translate "Invite on WhatsApp" %}</a>
+          {% if s.flyer %}<a class="btn ghost" href="{% url 'events:flyer_file' s.flyer.pk %}?download=1">⬇ {% translate "Save flyer" %}</a>{% endif %}
+          <a class="btn ghost" href="{% url 'events:public_event' e.pk %}">{% translate "Details" %}</a>
+        </div>
+      </div>
+    </article>
+    {% endwith %}{% endfor %}
+  </div>
+  {% if slides|length > 1 %}<div class="slide-dots">{% for s in slides %}<button type="button" aria-label="{{ forloop.counter }}"></button>{% endfor %}</div>{% endif %}
+  {% else %}
+  <div class="card muted">{% translate "No approved events this week or next week yet." %}</div>
+  {% endif %}
+  <p class="small muted" style="text-align:right;margin-top:.25rem">🔄 {% translate "This page updates by itself every few minutes." %}</p>
+</section>

@@ -16,8 +16,17 @@
     <ul>{% for c in churches %}<li><span class="dot" style="background:{{ c.color }}"></span><a href="{% url 'events:church_edit' c.pk %}">{{ c }}</a> <span class="small muted">· {{ c.n_users }} {% translate "users" %}</span>{% if not c.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
   </div>
   <div class="card">
-    <div class="row spread"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">＋ {% translate "Add" %}</a></div>
-    <ul>{% for t in types %}<li><a href="{% url 'events:type_edit' t.pk %}">{{ t.name_es }} / {{ t.name_en }}</a>{% if t.full_report %} <span class="badge b-submitted">{% translate "full report" %}</span>{% endif %}{% if not t.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
+    <div class="row spread" id="types"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">＋ {% translate "Add" %}</a></div>
+    <p class="small muted">{% translate "Turn on “Full report” for events that also report members who supported, fruits and Bible studies." %}</p>
+    {% for t in types %}
+    <div class="row spread type-row">
+      <span><a href="{% url 'events:type_edit' t.pk %}">{{ t.name_es }} / {{ t.name_en }}</a>{% if not t.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</span>
+      <form method="post" action="{% url 'events:type_toggle_report' t.pk %}">{% csrf_token %}
+        <button class="switch{% if t.full_report %} on{% endif %}" aria-pressed="{{ t.full_report|yesno:'true,false' }}">
+          <span class="knob"></span>{% translate "Full report" %}</button>
+      </form>
+    </div>
+    {% endfor %}
   </div>
   <div class="card">
     <h2 style="margin-top:0">{% translate "Quarter deadlines" %}</h2>

@@ -4,5 +4,6 @@
 <h1>📅 {% translate "Events calendar" %}</h1>
 <p class="muted">{% translate "Approved events from all churches in the region." %}</p>
 {% include "events/_month.html" %}
+{% include "events/_slides.html" %}
 {% if not user.is_authenticated %}<p class="footer-note"><a href="{% url 'login' %}">{% translate "Leaders: log in" %}</a></p>{% endif %}
 {% endblock %}

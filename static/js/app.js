@@ -47,3 +47,48 @@ document.addEventListener('submit', function (e) {
   cb.addEventListener('change', sync);
   sync();
 })();
+
+// Upcoming-events slideshow: arrows, dots, auto-advance (pauses while someone is touching it).
+(function () {
+  var box = document.querySelector('.upcoming');
+  if (!box) return;
+  var track = box.querySelector('.slides');
+  var slides = track ? track.querySelectorAll('.slide') : [];
+  var dots = box.querySelectorAll('.slide-dots button');
+  var index = 0, paused = false;
+
+  function go(i) {
+    if (!slides.length) return;
+    index = (i + slides.length) % slides.length;
+    track.scrollTo({ left: slides[index].offsetLeft - track.offsetLeft, behavior: 'smooth' });
+    mark();
+  }
+  function mark() {
+    dots.forEach(function (d, i) { d.classList.toggle('on', i === index); });
+  }
+  if (slides.length > 1) {
+    box.querySelector('.slide-prev').addEventListener('click', function () { go(index - 1); });
+    box.querySelector('.slide-next').addEventListener('click', function () { go(index + 1); });
+    dots.forEach(function (d, i) { d.addEventListener('click', function () { go(i); }); });
+    track.addEventListener('scroll', function () {
+      var i = Math.round(track.scrollLeft / track.clientWidth);
+      if (i !== index) { index = i; mark(); }
+    }, { passive: true });
+    ['mouseenter', 'touchstart', 'focusin'].forEach(function (ev) {
+      track.addEventListener(ev, function () { paused = true; }, { passive: true });
+    });
+    ['mouseleave', 'touchend', 'focusout'].forEach(function (ev) {
+      track.addEventListener(ev, function () { setTimeout(function () { paused = false; }, 4000); }, { passive: true });
+    });
+    setInterval(function () { if (!paused && !document.hidden) go(index + 1); }, 7000);
+    mark();
+  }
+
+  // Reload now and then so statuses and new events show up without pressing refresh.
+  var seconds = parseInt(box.dataset.autorefresh || '0', 10);
+  if (seconds > 0) {
+    setInterval(function () {
+      if (!document.hidden && !paused) window.location.reload();
+    }, seconds * 1000);
+  }
+})();

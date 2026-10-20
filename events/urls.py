@@ -44,5 +44,6 @@ urlpatterns = [
     path("settings/churches/<int:pk>/", views.church_edit, name="church_edit"),
     path("settings/types/new/", views.event_type_edit, name="type_new"),
     path("settings/types/<int:pk>/", views.event_type_edit, name="type_edit"),
+    path("settings/types/<int:pk>/full-report/", views.event_type_toggle_report, name="type_toggle_report"),
     path("settings/quarters/<int:pk>/", views.quarter_edit, name="quarter_edit"),
 ]

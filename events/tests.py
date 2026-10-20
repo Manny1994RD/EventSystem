@@ -460,3 +460,53 @@ class PostEventReportTests(Base):
         self.past_event()
         call_command("send_reminders", stdout=open("/dev/null", "w"))
         self.assertTrue(any("report" in m.subject.lower() or "informe" in m.subject.lower() for m in mail.outbox))
+
+
+class CalendarSlideshowTests(Base):
+    def approved(self, church, user, days):
+        e = self.event(church, user, date=timezone.localdate() + datetime.timedelta(days=days), submit=True)
+        services.review_event(e, self.regional, "approve")
+        return e
+
+    def test_public_calendar_shows_upcoming_slides_with_whatsapp_invite(self):
+        soon = self.approved(self.santiago, self.rep, 1)
+        soon.title = "Culto de jóvenes"
+        soon.save()
+        later = self.approved(self.vega, self.leader_vega, 30)
+        later.title = "Far away event"
+        later.save()
+        pending = self.event(self.moca, self.rep_moca, date=timezone.localdate() + datetime.timedelta(days=2),
+                             submit=True)
+        pending.title = "Not approved yet"
+        pending.save()
+        resp = self.client.get(reverse("events:public_calendar"))
+        slides = resp.context["slides"]
+        self.assertEqual([s["event"] for s in slides], [soon])
+        self.assertContains(resp, "https://wa.me/?text=")
+        self.assertIn("Culto", slides[0]["whatsapp"])
+        self.assertIn(f"/public/event/{soon.pk}/", slides[0]["link"])
+
+    def test_approved_flyer_shows_on_slide(self):
+        e = self.approved(self.santiago, self.rep, 1)
+        f = services.upload_flyer(e, self.rep, SimpleUploadedFile("f.png", PNG))
+        services.review_flyer(e, self.overseer, approve=True)
+        resp = self.client.get(reverse("events:public_calendar"))
+        self.assertContains(resp, reverse("events:flyer_file", args=[f.pk]))
+        self.client.force_login(self.rep_moca)
+        self.assertEqual(self.client.get(reverse("events:calendar")).status_code, 200)
+
+
+class EventTypeToggleTests(Base):
+    def test_admin_toggles_full_report(self):
+        self.client.force_login(self.regional)
+        self.client.post(reverse("events:type_toggle_report", args=[self.type.pk]))
+        self.type.refresh_from_db()
+        self.assertTrue(self.type.full_report)
+        self.client.post(reverse("events:type_toggle_report", args=[self.type.pk]))
+        self.type.refresh_from_db()
+        self.assertFalse(self.type.full_report)
+
+    def test_church_user_cannot_toggle(self):
+        self.client.force_login(self.rep)
+        resp = self.client.post(reverse("events:type_toggle_report", args=[self.type.pk]))
+        self.assertEqual(resp.status_code, 403)

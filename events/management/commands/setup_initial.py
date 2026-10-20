@@ -35,7 +35,7 @@ class Command(BaseCommand):
             self.stdout.write("Created churches.")
         if not EventType.objects.exists():
             for es, en in EVENT_TYPES:
-                EventType.objects.create(name_es=es, name_en=en, full_report=(en == "Bible social"))
+                EventType.objects.create(name_es=es, name_en=en, full_report=(en in ("Bible social", "Seminar")))
             self.stdout.write("Created event types.")
 
         username = os.environ.get("ADMIN_USERNAME")

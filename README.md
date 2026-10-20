@@ -11,9 +11,9 @@ A web app for planning each quarter's church events across the region. It works 
   - If the Regional Events Rep or the Overseer moves an event, the change applies right away and the church is notified.
   - If a church asks for a change, the Regional Events Rep and the Overseer are notified and approve or decline it.
 - **Quarters** run Jan–Mar, Apr–Jun, Jul–Sep and Oct–Dec. Submissions are due 2 weeks before the quarter starts. Anything sent after that is marked "late".
-- **Public calendar** at `/public/`: members can see approved events without logging in.
+- **Public calendar** at `/public/`: members can see approved events without logging in. Under the month there is a slideshow of this week's and next week's events, with the flyer, the time and an **Invite on WhatsApp** button. The page refreshes itself.
 - **Reports:** download as Excel or PDF, filtered by quarter, church, type or status.
-- **Post-event reports:** after an event, the church reports how many Church of God members and supporters from other churches attended (and from which churches), invites, the cost, the **fragrance** (testimonies or something nice that happened) and photos. Bible socials also ask for members who supported, fruits and Bible studies; admins can turn this full report on for other event types too. The Regional Events Rep and the Overseer are notified, and the totals show on the **After the event** page and in the Excel download.
+- **Post-event reports:** after an event, the church reports how many Church of God members and supporters from other churches attended (and from which churches), invites, the cost, the **fragrance** (testimonies or something nice that happened) and photos. Bible socials also ask for members who supported, fruits and Bible studies; Seminars also get it from the start, and admins can switch the full report on or off for any event type in Settings. The Regional Events Rep and the Overseer are notified, and the totals show on the **After the event** page and in the Excel download.
 - **Languages:** Spanish and English. Each person picks one with the ES / EN buttons.
 - **In-app notifications** (🔔).
 - **Email reminders:** off until an admin turns them on (see below). WhatsApp to the region's group chat is planned for later.

@@ -1,5 +1,6 @@
 import calendar
 import datetime
+from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,6 +10,7 @@ from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
@@ -540,7 +542,32 @@ def calendar_view(request):
     events = qs.filter(Q(status__in=SLOT_STATUSES) | own_drafts)
     ctx = _calendar_context(year, month, events)
     ctx["churches"] = Church.objects.filter(is_active=True)
+    ctx["slides"] = upcoming_slides(request)
     return render(request, "events/calendar.html", ctx)
+
+
+def upcoming_slides(request):
+    """Approved events for the rest of this week and next week, for the slideshow under the calendar."""
+    today = timezone.localdate()
+    end_this_week = today + datetime.timedelta(days=(5 - today.weekday()) % 7)  # weeks run Sunday–Saturday
+    end_next_week = end_this_week + datetime.timedelta(days=7)
+    events = Event.objects.filter(status=EventStatus.APPROVED, date__gte=today, date__lte=end_next_week).select_related(
+        "church", "event_type").order_by("date", "start_time")
+    slides = []
+    for e in events:
+        flyer = e.latest_flyer if e.flyer_status == FlyerStatus.APPROVED else None
+        link = request.build_absolute_uri(reverse("events:public_event", args=[e.pk]))
+        when = date_format(e.date, "l j F") + " · " + date_format(e.start_time, "TIME_FORMAT")
+        invite = f"{e.title} — {e.church}\n📅 {when}\n📍 {e.location}\n{link}"
+        slides.append({
+            "event": e,
+            "flyer": flyer,
+            "week": _("This week") if e.date <= end_this_week else _("Next week"),
+            "is_today": e.date == today,
+            "whatsapp": "https://wa.me/?text=" + quote(invite),
+            "link": link,
+        })
+    return slides
 
 
 def public_calendar(request):
@@ -551,6 +578,7 @@ def public_calendar(request):
     ctx["churches"] = Church.objects.filter(is_active=True)
     ctx["public"] = True
     ctx["list_events"] = events
+    ctx["slides"] = upcoming_slides(request)
     return render(request, "events/public_calendar.html", ctx)
 
 
@@ -639,6 +667,15 @@ def event_type_edit(request, pk=None):
         return redirect("events:settings")
     return render(request, "events/simple_form.html", {
         "form": form, "title": _("Edit event type") if obj else _("Add an event type")})
+
+
+@manager_required
+@require_POST
+def event_type_toggle_report(request, pk):
+    event_type = get_object_or_404(EventType, pk=pk)
+    event_type.full_report = not event_type.full_report
+    event_type.save(update_fields=["full_report"])
+    return redirect(reverse("events:settings") + "#types")
 
 
 @manager_required

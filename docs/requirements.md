@@ -189,7 +189,18 @@ After an approved event has happened, the church (the Leader or the Events Rep) 
 - Email reminders (when email is on): the day after the event, and again one week later, if the report hasn't been sent.
 - Photos are private: only that church and the regional team can see them.
 
-## 16. Still open
+- Settings → Event types has an on/off switch, **Full report**, for each type. Bible socials and Seminars are on from the start.
 
-1. Should any other event types (for example Seminars) also use the full Bible social report? An admin can switch this on at any time.
-2. WhatsApp group messages: a separate project, for later.
+## 16. Calendar slideshow (round 7)
+
+Under the month calendar (both the public calendar and the leaders' calendar) there is a slideshow of the **approved** events for the rest of this week and next week:
+
+- each slide shows the flyer (once approved), the event name, church, type, day, time and place, with a "This week" / "Next week" / "Today!" label
+- **Invite on WhatsApp**: opens WhatsApp with a ready-made invitation (name, date, time, place and a link to the event)
+- **Save flyer**: downloads the flyer so it can be forwarded
+- the slides move on their own every 7 seconds and stop while someone is touching them; people can also swipe or use the arrows
+- the page refreshes itself every 5 minutes, so new approvals and changes show up without anyone pressing refresh
+
+## 17. Still open
+
+1. WhatsApp group messages (automatic posts to the region's group): a separate project, for later.
