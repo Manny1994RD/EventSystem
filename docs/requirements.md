@@ -1,113 +1,153 @@
-# Church Event System: Draft Requirements
+# Church Event System: Requirements
 
-Status: draft for discussion. Items marked **[?]** are open questions.
+Status: draft, round 2. Items marked **[?]** are still open.
 
 ## 1. Goal
 
-Replace the quarterly "send in your event list and flyers, then wait" process with one place where:
+Replace the quarterly "send in your event list and flyers, then wait" process with one app where:
 
 - each church submits its events for the coming quarter before the deadline,
-- flyers are uploaded and reviewed in the same place,
-- everyone can see a shared calendar so events don't pile up on the same day,
-- the regional events rep can see every church's events and their status.
+- flyers are uploaded and reviewed in the same place, and handed to the graphic designer when they need changes,
+- everyone can see one shared calendar for the region, so no more than 2 events land on the same day,
+- the regional events rep and the overseer see every church's events and their status, and can download the report.
 
-## 2. Roles
+The app runs on our own Zima server. All data (database and flyer files) is stored on that server.
 
-| Role | Who | Can do |
+## 2. Region and churches
+
+Northern region, 5 churches to start:
+
+- Santiago
+- La Vega
+- Moca
+- Jarabacoa
+- Puerto Plata
+
+Admins can add churches (or deactivate them) from Settings. Users, events and reports are all linked to a church. The system supports more than one region later if needed.
+
+## 3. Roles
+
+| Role | Scope | Can do |
 |---|---|---|
-| **Local Events Rep** | One or more per church | Create and edit their church's events, upload flyers, submit the quarter |
-| **Church Leader** | Pastor or leader of a church | Same as Local Rep, plus sign off before the church submits **[?]** |
-| **Flyer Reviewer** | Person who checks flyers | Approve a flyer or send it back with comments |
-| **Regional Events Rep** | One per region | See every church's events, approve or decline events, set deadlines, override the calendar limit |
-| **Viewer** | Any member | See the calendar of approved events (read-only) |
+| **Church Events Rep** | Their church | Create and edit their church's events, upload flyers, submit the quarter, request changes to approved events |
+| **Church Leader** | Their church | Everything the Church Events Rep can do, plus see their church's history **[?] sign-off before submitting?** |
+| **Regional Events Rep** | Whole region | See every church's events, approve or decline events, move dates (no re-approval needed), override the 2-per-day limit, manage quarters and deadlines |
+| **Overseer** | Whole region | Review and approve flyers, approve events, move dates (no re-approval needed), override the 2-per-day limit, download reports |
+| **Graphic Designer** | Flyers sent to them | See flyers that need changes along with the overseer's notes, upload the corrected version |
+| **Admin** | Whole system | Create and deactivate users, assign roles and churches, add churches, edit event types **[?] who is admin: Regional Rep, Overseer, or both?** |
+| **Viewer** | Read only | See the calendar of approved events **[?] do members need a login, or is it a public link?** |
 
 One person can hold more than one role.
 
-## 3. Quarterly cycle
+## 4. Quarterly cycle
 
 ```
-Regional rep opens Q window ──► Churches add events (Draft)
-                                       │
-                                       ▼
-                          Church submits the quarter (Submitted)
-                                       │
-               ┌───────────────────────┼────────────────────────┐
-               ▼                       ▼                        ▼
-       Flyer review             Regional review           Calendar check
-  (Approved / Changes)   (Approved / Changes / Declined)   (max 2 per day)
-               └───────────────────────┬────────────────────────┘
-                                       ▼
-                     Event Approved + Flyer Approved = Ready
-                                       │
-                                       ▼
-                       Shown on the shared calendar
+Regional rep opens the quarter's submission window
+            │
+            ▼
+Churches add events (Draft) ── calendar check: max 2 per day across the region
+            │
+            ▼
+Church submits the quarter (Submitted)
+            │
+            ▼
+Event review by the Regional Rep / Overseer ──► Approved / Changes requested / Declined
+            │
+            ▼
+Flyer upload (due at least 1–2 weeks before the event)
+            │
+            ▼
+Overseer reviews the flyer
+     ├── Approved ───────────────────────────────► Event is READY
+     └── Needs adjustment ──► Graphic Designer fixes it and uploads the new version
+                                       └──► back to the Overseer [?]
 ```
 
-- **Submission window:** the regional rep sets an open date and a deadline for each quarter (for example, Q1 Jan–Mar submissions are due by Dec 15).
-- **Reminders:** emails go out to churches that haven't submitted, at 2 weeks, 1 week and 2 days before the deadline.
-- **Late submissions:** after the deadline a church can still submit, but the submission is marked **Late** and the regional rep decides whether to accept it. **[?]**
+- **Submission window:** the regional rep sets an open date and a deadline for each quarter.
+- **Reminders:** sent to churches that haven't submitted, before the deadline.
+- **Late submissions:** marked **Late**. The regional rep or overseer decides whether to accept them.
 
-## 4. Event fields
+## 5. Calendar rule: max 2 events per day, across the whole region
+
+- When someone picks a date, the form shows what is already booked across the region that day.
+- If the day already has 2 events, the church **cannot submit** that event.
+- The Regional Events Rep or the Overseer can **override** the limit to approve a 3rd (or later) event. The override is logged with the name of the person who made it and their reason.
+- Submitted and approved events count toward the limit. Drafts don't.
+
+## 6. Flyer rules
+
+- A flyer can be uploaded at submission time or later.
+- **Due date:** at least 1–2 weeks before the event. **[?]** Proposed: a reminder 3 weeks before, a warning at 2 weeks, and the event is flagged **Flyer overdue** at 1 week.
+- **Statuses:** Not uploaded → Pending overseer review → Approved, or Pending overseer review → Sent to designer (with notes) → Designer uploaded a revision → Pending overseer review **[?]** → Approved
+- Every version of a flyer is kept, so you can see what changed.
+
+## 7. Changes after approval
+
+| Who changes the event | Result |
+|---|---|
+| Regional Events Rep or Overseer | The change applies right away. No re-approval. The church is notified. |
+| The church (Rep or Leader) | Becomes a **change request**. The Regional Events Rep and the Overseer are notified and approve or decline it. The approved version stays in place until they decide. |
+
+Cancellations follow the same rule. The calendar limit is checked again whenever a date moves.
+
+## 8. Event fields
 
 | Field | Required | Notes |
 |---|---|---|
 | Title | Yes | |
-| Type | Yes | Bible social, Seminar, Cleanup, Blood donation, Youth, Outreach, Other (the list can be edited) |
-| Church | Yes | Filled in automatically from the person's account |
+| Type | Yes | Bible social, Seminar, Cleanup, Blood donation, Youth, Outreach, Other (Admin can edit the list) |
+| Church | Yes | Filled in automatically from the user's account |
 | Date and start/end time | Yes | |
 | Location / address | Yes | |
 | Description | Yes | |
 | Contact person and phone | Yes | |
-| Needs support from other churches? | No | Yes/no plus notes, e.g. "need 5 volunteers" |
+| Needs support from other churches? | No | Yes/no plus notes |
 | Expected attendance | No | |
-| Flyer | Required before approval **[?]** | Image or PDF |
+| Flyer | Before the flyer due date | Image or PDF |
 
-## 5. Statuses
+## 9. Reports
 
-**Event:** Draft → Submitted → (Changes requested ↔ Submitted) → Approved / Declined → (Cancelled)
+- The Overseer (and the Regional Rep) can download the quarter's report, filtered by church, status and event type.
+- **Format:** Excel and/or PDF **[?]**
+- Contents: every event, its status, flyer status, dates, contact and who approved it.
 
-**Flyer:** Not uploaded → Pending review → Approved / Changes requested (with a comment) → re-upload → Pending review
-
-The person who submitted sees every comment and status change and gets an email when one happens.
-
-## 6. Calendar rule: at most 2 events per day
-
-- When someone picks a date, the form shows what is already booked that day.
-- If the day already has 2 events, the date is blocked. Only the regional rep can override it.
-- Submitted and approved events count toward the limit (drafts don't), so the first church to submit gets the date.
-- Whether the limit applies across the whole region or to each church separately is still open. **[?]**
-
-## 7. Screens (MVP)
+## 10. Screens (MVP)
 
 1. **Log in**
-2. **My church's quarter**: list of events for the open quarter, with statuses, the deadline countdown and a "Submit quarter" button
-3. **Event form**: the fields above, with the calendar check built in
-4. **Shared calendar**: month view of every church's events, color-coded by status
-5. **Flyer review queue** (Flyer Reviewer): flyer preview with Approve and Request changes buttons and a comment box
-6. **Regional dashboard**: every church with its submitted/late/missing status and its events, plus approve/decline and CSV/PDF export of the quarter report
-7. **Settings** (Regional): churches, users and roles, event types, quarter deadlines
+2. **My church's quarter**: event list, statuses, deadline countdown, "Submit quarter" button
+3. **Event form**: with the calendar check built in
+4. **Shared calendar**: month view of the whole region, color-coded by church or status
+5. **Flyer review** (Overseer): preview, then Approve, or send to the designer with notes
+6. **Designer queue** (Graphic Designer): flyers that need changes, the notes, a box to upload the revision
+7. **Regional dashboard**: each church's submitted/late/missing status, approvals, change requests, overrides, report download
+8. **Settings** (Admin): users and roles, churches, event types, quarters and deadlines
 
-## 8. Suggested tech
+## 11. Hosting: self-hosted on the Zima server
 
-- A **web app** that works on phones, so nobody has to install anything.
-- **Next.js** for the app and **Supabase** for logins, the database and flyer storage. Both have free tiers that cover a region of churches.
-- Email through Supabase or Resend.
+- Shipped as a **Docker Compose** app (ZimaOS runs Docker apps natively):
+  - `app`: the web app (Next.js, works on phones)
+  - `db`: PostgreSQL, data saved to a volume on the Zima server
+  - flyer files saved to a folder on the Zima server
+- Logins are handled by the app itself, with passwords stored hashed. No outside service holds the data.
+- **Backups:** a nightly database dump and a copy of the flyer folder to another drive. **[?]**
+- **Access from outside the house/church:** to share one link with everyone, the server must be reachable from the internet over HTTPS. Options: Cloudflare Tunnel (free; needs a domain), Tailscale Funnel, or port-forwarding with a domain. **[?]**
 
-## 9. Build phases
+## 12. Build phases
 
-1. **MVP**: logins and roles, events, quarterly submission, flyer upload and review, shared calendar with the 2-per-day rule, regional dashboard
-2. **Next**: email reminders, export of the quarterly report, a sign-up list for volunteers on events that need support
-3. **Later**: post-event reports (attendance, photos), a year-over-year history
+1. **MVP**: users and roles, churches, events and quarterly submission, the calendar rule and overrides, flyer review and designer handoff, change requests, regional dashboard, report download, Docker setup for Zima
+2. **Next**: email/WhatsApp notifications and reminders, volunteer sign-ups for events that need support
+3. **Later**: post-event reports (attendance, photos), history across years
 
-## 10. Open questions
+## 13. Open questions (round 2)
 
-1. How many churches are in the region, and how many people per church will submit?
-2. Who gives final approval of events: the regional rep, someone above them, or both? Does a pastor need to sign off before a church submits?
-3. Is the flyer reviewer the same person as the regional rep, or someone else?
-4. Does the 2-per-day limit apply to the whole region or to each church? Should a full day be blocked, or only show a warning?
-5. Do flyers have to be in at submission time, or can they come later (for example, 3 weeks before the event)?
-6. Does the event schedule follow calendar quarters (Jan–Mar, Apr–Jun, …)? What are the exact submission deadlines?
-7. After an event is approved, what happens if it moves to another date or is cancelled? Does it need approval again?
-8. Does the approved list go to anyone outside the region (a conference or headquarters)? In what format?
-9. Does the app need more than one language?
-10. Who will maintain the app once it's built, and is there a budget for hosting (it can probably be $0)?
+1. After the graphic designer uploads the fixed flyer, does it go back to the Overseer for a final OK, or is it approved automatically?
+2. Who approves the **event itself** (not the flyer): the Regional Events Rep, the Overseer, or either one?
+3. Does the Church Leader need to sign off before their church submits, or can the Church Events Rep submit alone?
+4. Flyer deadline: is 2 weeks the target and 1 week the hard cutoff? What happens after the cutoff (block the event, or only flag it)?
+5. App language: Spanish, English, or both with a switch?
+6. Notifications: email, WhatsApp, or both? (Email is free. WhatsApp needs a WhatsApp Business account and may cost a little.)
+7. Who is the Admin who creates users: the Regional Events Rep, the Overseer, or both?
+8. Do church members need a login to see the calendar, or should there be a public calendar link?
+9. Report format: Excel, PDF, or both?
+10. Is the Zima server already reachable from the internet? Do you have a domain name (e.g. `eventos.yourchurch.org`)?
+11. Quarter dates: calendar quarters (Jan–Mar, Apr–Jun, …)? What is the usual submission deadline (e.g. 2 weeks before the quarter starts)?
