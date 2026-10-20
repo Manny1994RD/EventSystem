@@ -10,7 +10,9 @@ from django.utils import timezone
 from accounts.models import Role, User
 
 from . import services
-from .models import ChangeRequest, Church, Event, EventStatus, EventType, FlyerStatus, Notification, SiteSettings
+from .models import (
+    ChangeRequest, Church, Event, EventReport, EventStatus, EventType, FlyerStatus, Notification, SiteSettings,
+)
 
 MEDIA = tempfile.mkdtemp()
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 100
@@ -363,11 +365,13 @@ class PostEventReportTests(Base):
 
     def post(self, e, **extra):
         data = {"members_attended": 40, "supporters_attended": 12, "supporting_churches": [self.vega.pk],
-                "people_served": 30, "fruits": 3, "bible_studies": 5, "invites": 25, "cost": "3500.00",
-                "notes": "Good day", **extra}
+                "members_supporting": 8, "fruits": 3, "bible_studies": 5, "invites": 25, "cost": "3500.00",
+                "fragrance": "A family accepted a Bible study", **extra}
         return self.client.post(reverse("events:report_edit", args=[e.pk]), data)
 
     def test_church_submits_report_with_photos_and_reviewers_are_notified(self):
+        self.type.full_report = True
+        self.type.save()
         e = self.past_event()
         self.client.force_login(self.rep)
         photos = [SimpleUploadedFile(f"p{i}.jpg", PNG, content_type="image/jpeg") for i in range(2)]
@@ -378,6 +382,8 @@ class PostEventReportTests(Base):
         self.assertEqual(r.total_attendance, 52)
         self.assertEqual(r.photos.count(), 2)
         self.assertEqual(list(r.supporting_churches.all()), [self.vega])
+        self.assertEqual((r.members_supporting, r.fruits, r.bible_studies), (8, 3, 5))
+        self.assertEqual(r.fragrance, "A family accepted a Bible study")
         for user in (self.regional, self.overseer):
             self.assertTrue(Notification.objects.filter(user=user, text_en__contains="sent the report").exists())
         # Locked after sending.
@@ -426,7 +432,21 @@ class PostEventReportTests(Base):
         resp = self.client.get(reverse("events:report_excel"), {"quarter": e.quarter_id})
         wb = load_workbook(BytesIO(resp.content))
         sheet = wb.worksheets[1]
-        self.assertEqual(sheet.cell(row=2, column=5).value, 40)
+        self.assertEqual(sheet.cell(row=2, column=6).value, 40)
+
+    def test_basic_report_for_non_bible_social_events(self):
+        cleanup = EventType.objects.create(name_es="Jornada de limpieza", name_en="Cleanup")
+        e = self.past_event()
+        Event.objects.filter(pk=e.pk).update(event_type=cleanup)
+        self.client.force_login(self.rep)
+        resp = self.client.get(reverse("events:report_edit", args=[e.pk]))
+        self.assertNotContains(resp, 'name="fruits"')
+        self.assertNotContains(resp, 'name="members_supporting"')
+        self.assertContains(resp, 'name="invites"')
+        self.assertContains(resp, 'name="fragrance"')
+        self.post(e, submit="1")
+        r = EventReport.objects.get(event=e)
+        self.assertEqual((r.members_attended, r.invites, r.fruits), (40, 25, 0))
 
     def test_report_reminder_email(self):
         from django.core import mail

@@ -108,7 +108,7 @@ class ChurchForm(forms.ModelForm):
 class EventTypeForm(forms.ModelForm):
     class Meta:
         model = EventType
-        fields = ["name_es", "name_en", "is_active"]
+        fields = ["name_es", "name_en", "full_report", "is_active"]
 
 
 class SiteSettingsForm(forms.ModelForm):
@@ -195,6 +195,9 @@ class MultiplePhotoField(forms.FileField):
         return [single(data, initial)] if data else []
 
 
+FULL_REPORT_FIELDS = ("members_supporting", "fruits", "bible_studies")
+
+
 class EventReportForm(forms.ModelForm):
     photos = MultiplePhotoField(
         label=_("Photos"), required=False,
@@ -203,11 +206,11 @@ class EventReportForm(forms.ModelForm):
 
     class Meta:
         model = EventReport
-        fields = ["members_attended", "supporters_attended", "supporting_churches", "people_served", "fruits",
-                  "bible_studies", "invites", "cost", "notes"]
+        fields = ["members_attended", "supporters_attended", "supporting_churches", "members_supporting", "fruits",
+                  "bible_studies", "invites", "cost", "fragrance"]
         widgets = {
             "supporting_churches": forms.CheckboxSelectMultiple,
-            "notes": forms.Textarea(attrs={"rows": 4}),
+            "fragrance": forms.Textarea(attrs={"rows": 4}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -216,8 +219,13 @@ class EventReportForm(forms.ModelForm):
         self.fields["photos"].help_text = (_("You can pick several photos at once (up to %(n)s in total).")
                                            % {"n": MAX_REPORT_PHOTOS})
         self.fields["supporting_churches"].queryset = Church.objects.filter(is_active=True).exclude(pk=event.church_id)
-        for name in ("members_attended", "supporters_attended", "people_served", "fruits", "bible_studies",
-                     "invites", "cost"):
+        if not event.event_type.full_report:
+            # Blood drives, cleanups, etc. only count attendance, invites and cost.
+            for name in FULL_REPORT_FIELDS:
+                del self.fields[name]
+        for name in ("members_attended", "supporters_attended", *FULL_REPORT_FIELDS, "invites", "cost"):
+            if name not in self.fields:
+                continue
             self.fields[name].widget.attrs.update({"inputmode": "decimal" if name == "cost" else "numeric",
                                                    "min": 0})
 

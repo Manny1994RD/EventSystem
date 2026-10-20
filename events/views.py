@@ -750,7 +750,7 @@ def report_photo_delete(request, pk):
     return redirect("events:report_edit", pk=event.pk)
 
 
-REPORT_TOTAL_FIELDS = ["members_attended", "supporters_attended", "people_served", "fruits", "bible_studies",
+REPORT_TOTAL_FIELDS = ["members_attended", "supporters_attended", "members_supporting", "fruits", "bible_studies",
                        "invites", "cost"]
 
 

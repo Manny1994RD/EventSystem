@@ -9,7 +9,7 @@
 {% if churches %}<form method="get" style="margin-bottom:1rem"><input type="hidden" name="quarter" value="{{ quarter.pk }}">
   <select name="church" onchange="this.form.submit()" style="max-width:260px"><option value="">{% translate "All churches" %}</option>
   {% for c in churches %}<option value="{{ c.pk }}" {% if c.pk|stringformat:"s" == church_id %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></form>{% endif %}
-{% if sent_count %}<div class="card"><h3>{% translate "Totals (sent reports)" %}</h3>{% include "events/_report_stats.html" with r=totals %}</div>{% endif %}
+{% if sent_count %}<div class="card"><h3>{% translate "Totals (sent reports)" %}</h3>{% include "events/_report_stats.html" with r=totals full=True %}</div>{% endif %}
 {% for e, r in rows %}
   <a class="event-item" href="{% if r and r.status == 'submitted' or not user.is_church_user %}{% url 'events:detail' e.pk %}{% else %}{% url 'events:report_edit' e.pk %}{% endif %}">
     <div class="datebox"><div class="d">{{ e.date|date:"j" }}</div><div class="m">{{ e.date|date:"M" }}</div></div>

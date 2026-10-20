@@ -17,7 +17,7 @@
   </div>
   <div class="card">
     <div class="row spread"><h2 style="margin:0">{% translate "Event types" %}</h2><a class="btn ghost" href="{% url 'events:type_new' %}">＋ {% translate "Add" %}</a></div>
-    <ul>{% for t in types %}<li><a href="{% url 'events:type_edit' t.pk %}">{{ t.name_es }} / {{ t.name_en }}</a>{% if not t.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
+    <ul>{% for t in types %}<li><a href="{% url 'events:type_edit' t.pk %}">{{ t.name_es }} / {{ t.name_en }}</a>{% if t.full_report %} <span class="badge b-submitted">{% translate "full report" %}</span>{% endif %}{% if not t.is_active %} <span class="badge b-none">{% translate "inactive" %}</span>{% endif %}</li>{% endfor %}</ul>
   </div>
   <div class="card">
     <h2 style="margin-top:0">{% translate "Quarter deadlines" %}</h2>

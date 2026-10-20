@@ -111,7 +111,7 @@ class Command(BaseCommand):
                     continue
                 params = {"title": event.title, "date": services.fmt_date(event.date)}
                 es, en = both(lambda: _("Please send the post-event report for “%(title)s” (%(date)s): attendance, "
-                                        "fruits, Bible studies, invites, cost and photos.") % params)
+                                        "invites, cost, the fragrance and photos.") % params)
                 subject = both(lambda: _("Post-event report: %(title)s") % params)
                 sent += emailing.send_to_users(services.church_users(event.church), subject, es, en,
                                                event=event, site=site)

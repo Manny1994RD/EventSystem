@@ -165,23 +165,24 @@ Cancellations follow the same rule. The calendar limit is checked again whenever
 | WhatsApp (later) | One group chat for the whole region |
 | Email | Built but **off**. When ready, an admin enters the Regional Events Rep's email in Settings → Email reminders, turns it on, and sends a test. |
 
-## 15. Post-event reports (round 5)
+## 15. Post-event reports (round 6)
 
-After an approved event has happened, the church (the Leader or the Events Rep) fills in a report:
+After an approved event has happened, the church (the Leader or the Events Rep) fills in a report. The questions depend on the event type.
 
-| Field | Notes |
-|---|---|
-| Church members who attended | number |
-| Supporters from other churches | number, plus which churches came (checkboxes) |
-| People served / helped | number |
-| Fruits | number |
-| Bible studies | number |
-| Invites | number |
-| Cost of the event (RD$) | amount |
-| Notes and testimonies | free text **[?] is this the "fragrance" item?** |
-| Photos | up to 12 |
+| Field | Bible social (full report) | Other events (blood drive, cleanup, …) |
+|---|---|---|
+| Church of God members who attended | ✔ | ✔ |
+| Supporters from other churches + which churches | ✔ | ✔ |
+| Members who supported (teaching, back office…) | ✔ | — |
+| Fruits | ✔ | — |
+| Bible studies | ✔ | — |
+| Invites (its own category) | ✔ | ✔ |
+| Cost of the event (RD$) | ✔ | ✔ |
+| **Fragrance**: testimonies, or something nice that happened | ✔ | ✔ |
+| Photos (up to 12) | ✔ | ✔ |
 
-- The church can save it and finish later. When they press **Send report**, the Regional Events Rep and the Overseer are notified.
+- Admins choose which event types use the full report (Settings → Event types → "uses the full report"). "Bible social" is turned on from the start.
+- The church can save the report and finish it later. When they press **Send report**, the Regional Events Rep and the Overseer are notified.
 - Once sent, the report is locked. A reviewer can send it back for corrections with a comment.
 - **After the event** page: each event in the quarter with its report status (sent / started / missing), plus totals for the region or for one church.
 - The Excel download has a second sheet with every report and the totals.
@@ -190,6 +191,5 @@ After an approved event has happened, the church (the Leader or the Events Rep) 
 
 ## 16. Still open
 
-1. What is "fragrance" in the report? (For now it's covered by "Notes and testimonies".)
-2. "How many members are supported": I read this as people served/helped by the event. Is that right, or does it mean something else?
-3. WhatsApp group messages: a separate project, for later.
+1. Should any other event types (for example Seminars) also use the full Bible social report? An admin can switch this on at any time.
+2. WhatsApp group messages: a separate project, for later.

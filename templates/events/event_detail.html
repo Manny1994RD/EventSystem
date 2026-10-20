@@ -180,9 +180,9 @@
     {% if report.status == 'submitted' %}<span class="badge b-approved">{% translate "Report sent" %}</span>{% elif report %}<span class="badge b-changes">{% translate "Report not sent yet" %}</span>{% endif %}</h3>
   {% if report.status == 'submitted' %}
     <p class="small muted">{% translate "Sent by" %} {{ report.submitted_by }} · {{ report.submitted_at|date:"j M Y, g:i A" }}</p>
-    {% include "events/_report_stats.html" with r=report %}
+    {% include "events/_report_stats.html" with r=report full=report.full %}
     {% if report.supporting_churches.all %}<p class="small"><strong>{% translate "Churches that supported" %}:</strong> {{ report.supporting_churches.all|join:", " }}</p>{% endif %}
-    {% if report.notes %}<p>{{ report.notes|linebreaksbr }}</p>{% endif %}
+    {% if report.fragrance %}<div class="msg info"><strong>🌸 {% translate "Fragrance" %}:</strong> {{ report.fragrance|linebreaksbr }}</div>{% endif %}
     {% if report.photos.all %}<div class="photos">{% for p in report.photos.all %}<a href="{% url 'events:report_photo' p.pk %}" target="_blank"><img src="{% url 'events:report_photo' p.pk %}" alt=""></a>{% endfor %}</div>{% endif %}
     {% if user.is_reviewer %}
       <details><summary>{% translate "Something is wrong? Send it back for corrections" %}</summary>
@@ -193,7 +193,7 @@
   {% else %}
     {% if report.review_comment %}<div class="msg warning small"><strong>{% translate "Corrections requested" %}:</strong> {{ report.review_comment }}</div>{% endif %}
     {% if can_write_report %}
-      <p>{% translate "After the event, tell the region how it went: attendance, fruits, Bible studies, invites, cost and photos." %}</p>
+      <p>{% translate "After the event, tell the region how it went: attendance, invites, cost, the fragrance (testimonies) and photos." %}</p>
       <a class="btn big block" href="{% url 'events:report_edit' event.pk %}">📝 {% if report %}{% translate "Continue the report" %}{% else %}{% translate "Fill in the report" %}{% endif %}</a>
     {% else %}<p class="muted small">{% translate "The church has not sent the report yet." %}</p>{% endif %}
   {% endif %}

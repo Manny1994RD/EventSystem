@@ -140,36 +140,40 @@ def report_pdf(request):
 
 def _post_event_sheet(wb, events, Font, PatternFill, get_column_letter):
     ws = wb.create_sheet(_("After the event"))
-    cols = [_("Date"), _("Church"), _("Event"), _("Report"), _("Members"), _("Supporters"),
-            _("Supporting churches"), _("Served"), _("Fruits"), _("Bible studies"), _("Invites"), _("Cost (RD$)"),
-            _("Photos"), _("Notes")]
-    ws.append(cols)
+    ws.append([_("Date"), _("Church"), _("Event"), _("Type"), _("Report"), _("Members"), _("Supporters"),
+               _("Supporting churches"), _("Members who supported"), _("Fruits"), _("Bible studies"), _("Invites"),
+               _("Cost (RD$)"), _("Photos"), _("Fragrance")])
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="1E3A8A")
     reports = {r.event_id: r for r in EventReport.objects.filter(event__in=events).prefetch_related(
         "supporting_churches", "photos")}
-    numbers = ["members_attended", "supporters_attended", "people_served", "fruits", "bible_studies", "invites", "cost"]
+    numbers = ["members_attended", "supporters_attended", "members_supporting", "fruits", "bible_studies",
+               "invites", "cost"]
     totals = dict.fromkeys(numbers, 0)
     for e in events:
         if e.status != EventStatus.APPROVED:
             continue
+        start = [e.date.strftime("%d/%m/%Y"), e.church.name, e.title, str(e.event_type)]
         r = reports.get(e.pk)
         if r is None or r.status != EventReport.Status.SUBMITTED:
-            ws.append([e.date.strftime("%d/%m/%Y"), e.church.name, e.title,
-                       _("Not sent") if r is None or r.status != EventReport.Status.SUBMITTED else ""])
+            ws.append(start + [_("Not sent")])
             continue
         for n in numbers:
             totals[n] += getattr(r, n)
-        ws.append([e.date.strftime("%d/%m/%Y"), e.church.name, e.title, _("Sent"), r.members_attended,
-                   r.supporters_attended, ", ".join(c.name for c in r.supporting_churches.all()), r.people_served,
-                   r.fruits, r.bible_studies, r.invites, float(r.cost), r.photos.count(), r.notes])
+        full = e.event_type.full_report
+        ws.append(start + [
+            _("Sent"), r.members_attended, r.supporters_attended,
+            ", ".join(c.name for c in r.supporting_churches.all()),
+            r.members_supporting if full else "", r.fruits if full else "", r.bible_studies if full else "",
+            r.invites, float(r.cost), r.photos.count(), r.fragrance,
+        ])
     ws.append([])
-    ws.append([_("Total"), "", "", "", totals["members_attended"], totals["supporters_attended"], "",
-               totals["people_served"], totals["fruits"], totals["bible_studies"], totals["invites"],
+    ws.append([_("Total"), "", "", "", "", totals["members_attended"], totals["supporters_attended"], "",
+               totals["members_supporting"], totals["fruits"], totals["bible_studies"], totals["invites"],
                float(totals["cost"])])
     for cell in ws[ws.max_row]:
         cell.font = Font(bold=True)
-    for i, w in enumerate([12, 16, 32, 12, 10, 11, 26, 10, 9, 13, 9, 12, 8, 50], start=1):
+    for i, w in enumerate([12, 16, 32, 20, 12, 10, 11, 26, 12, 9, 13, 9, 12, 8, 50], start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "A2"

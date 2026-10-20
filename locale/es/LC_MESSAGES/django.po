@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-20 12:42-0400\n"
+"POT-Creation-Date: 2026-10-20 12:50-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,7 +72,7 @@ msgstr "Encargado(a) regional de eventos"
 msgid "Overseer"
 msgstr "Supervisor (Overseer)"
 
-#: accounts/models.py:11 events/models.py:255
+#: accounts/models.py:11 events/models.py:259
 msgid "Graphic Designer"
 msgstr "Diseñador(a) gráfico(a)"
 
@@ -85,7 +85,7 @@ msgid "role"
 msgstr "rol"
 
 #: accounts/models.py:22 events/forms.py:28 events/forms.py:140
-#: events/models.py:19 events/models.py:167
+#: events/models.py:19 events/models.py:171
 msgid "church"
 msgstr "iglesia"
 
@@ -198,7 +198,7 @@ msgstr "Trimestre"
 msgid "All churches"
 msgstr "Todas las iglesias"
 
-#: events/forms.py:142 events/models.py:170
+#: events/forms.py:142 events/models.py:174
 msgid "type of event"
 msgstr "tipo de evento"
 
@@ -215,7 +215,7 @@ msgstr "Estado"
 msgid "All (except drafts)"
 msgstr "Todos (menos borradores)"
 
-#: events/forms.py:158 events/models.py:61
+#: events/forms.py:158 events/models.py:65
 msgid "email password"
 msgstr "contraseña del correo"
 
@@ -231,27 +231,27 @@ msgstr ""
 msgid "Enter the email to send from before turning email on."
 msgstr "Escriba el correo desde el que se enviará antes de activar el correo."
 
-#: events/forms.py:200 events/reports.py:145
-#: templates/events/report_form.html:25
+#: events/forms.py:203 events/reports.py:145
+#: templates/events/report_form.html:30
 msgid "Photos"
 msgstr "Fotos"
 
-#: events/forms.py:202
+#: events/forms.py:219
 #, python-format
 msgid "You can pick several photos at once (up to %(n)s in total)."
 msgstr "Puede elegir varias fotos a la vez (hasta %(n)s en total)."
 
-#: events/forms.py:227
+#: events/forms.py:236
 #, python-format
 msgid "Too many photos (max %(n)s)."
 msgstr "Demasiadas fotos (máximo %(n)s)."
 
-#: events/forms.py:230
+#: events/forms.py:239
 #, python-format
 msgid "“%(name)s” is not a photo."
 msgstr "“%(name)s” no es una foto."
 
-#: events/forms.py:232
+#: events/forms.py:241
 #, python-format
 msgid "“%(name)s” is too big (max %(mb)s MB)."
 msgstr "“%(name)s” es muy grande (máximo %(mb)s MB)."
@@ -304,10 +304,10 @@ msgstr "Recordatorio de flyer: %(title)s"
 #, python-format
 msgid ""
 "Please send the post-event report for “%(title)s” (%(date)s): attendance, "
-"fruits, Bible studies, invites, cost and photos."
+"invites, cost, the fragrance and photos."
 msgstr ""
 "Por favor envíe el informe del evento “%(title)s” (%(date)s): asistencia, "
-"frutos, estudios bíblicos, invitaciones, costo y fotos."
+"invitaciones, costo, la fragancia y fotos."
 
 #: events/management/commands/send_reminders.py:115
 #, python-format
@@ -322,7 +322,7 @@ msgstr "nombre"
 msgid "calendar color"
 msgstr "color en el calendario"
 
-#: events/models.py:15 events/models.py:29
+#: events/models.py:15 events/models.py:33
 msgid "active"
 msgstr "activo"
 
@@ -338,31 +338,43 @@ msgstr "nombre (español)"
 msgid "name (English)"
 msgstr "nombre (inglés)"
 
-#: events/models.py:33
+#: events/models.py:30
+msgid "uses the full report (like Bible socials)"
+msgstr "usa el informe completo (como las confraternidades bíblicas)"
+
+#: events/models.py:31
+msgid ""
+"Adds members who supported, fruits and Bible studies to the post-event "
+"report."
+msgstr ""
+"Agrega miembros que apoyaron, frutos y estudios bíblicos al informe del "
+"evento."
+
+#: events/models.py:37
 msgid "event type"
 msgstr "tipo de evento"
 
-#: events/models.py:42
+#: events/models.py:46
 msgid "maximum events per day (whole region)"
 msgstr "máximo de eventos por día (toda la región)"
 
-#: events/models.py:43
+#: events/models.py:47
 msgid "flyer due (days before event)"
 msgstr "entrega del flyer (días antes del evento)"
 
-#: events/models.py:44
+#: events/models.py:48
 msgid "flyer final deadline (days before event)"
 msgstr "fecha límite final del flyer (días antes del evento)"
 
-#: events/models.py:46
+#: events/models.py:50
 msgid "quarter submissions due (days before quarter starts)"
 msgstr "entrega del trimestre (días antes de que empiece)"
 
-#: events/models.py:49
+#: events/models.py:53
 msgid "approve the designer's fixed flyer automatically"
 msgstr "aprobar automáticamente el flyer corregido por el diseñador"
 
-#: events/models.py:50
+#: events/models.py:54
 msgid ""
 "If off, the Overseer or Regional Events Rep gives the final OK after the "
 "designer uploads the fix."
@@ -370,235 +382,247 @@ msgstr ""
 "Si está apagado, el Supervisor o el Encargado regional da el visto bueno "
 "final después de que el diseñador suba la corrección."
 
-#: events/models.py:54
+#: events/models.py:58
 msgid "send emails"
 msgstr "enviar correos"
 
-#: events/models.py:55
+#: events/models.py:59
 msgid "send from this email"
 msgstr "enviar desde este correo"
 
-#: events/models.py:56
+#: events/models.py:60
 msgid "For example the Regional Events Rep's email."
 msgstr "Por ejemplo, el correo del Encargado regional de eventos."
 
-#: events/models.py:57
+#: events/models.py:61
 msgid "email server"
 msgstr "servidor de correo"
 
-#: events/models.py:58
+#: events/models.py:62
 msgid "email server port"
 msgstr "puerto del servidor de correo"
 
-#: events/models.py:59
+#: events/models.py:63
 msgid "email username"
 msgstr "usuario del correo"
 
-#: events/models.py:60
+#: events/models.py:64
 msgid "Usually the same email address."
 msgstr "Normalmente es el mismo correo."
 
-#: events/models.py:62
+#: events/models.py:66
 msgid "For Gmail, use an “app password”, not the normal password."
 msgstr ""
 "Para Gmail, use una “contraseña de aplicación”, no la contraseña normal."
 
-#: events/models.py:63
+#: events/models.py:67
 msgid "send deadline reminders"
 msgstr "enviar recordatorios de fechas límite"
 
-#: events/models.py:64
+#: events/models.py:68
 msgid "Quarter deadline and flyer deadline reminders."
 msgstr "Recordatorios de la fecha límite del trimestre y de los flyers."
 
-#: events/models.py:65
+#: events/models.py:69
 msgid "also email every notification"
 msgstr "enviar también cada notificación por correo"
 
-#: events/models.py:66
+#: events/models.py:70
 msgid "Approvals, changes, flyers… (only to people with an email)."
 msgstr "Aprobaciones, cambios, flyers… (solo a quienes tengan correo)."
 
-#: events/models.py:67
+#: events/models.py:71
 msgid "app address"
 msgstr "dirección de la aplicación"
 
-#: events/models.py:68
+#: events/models.py:72
 msgid "Used for links in emails, e.g. https://zima.your-tailnet.ts.net"
 msgstr ""
 "Se usa para los enlaces en los correos, ej. https://zima.your-tailnet.ts.net"
 
-#: events/models.py:71 events/models.py:72
+#: events/models.py:75 events/models.py:76
 msgid "settings"
 msgstr "configuración"
 
-#: events/models.py:87
+#: events/models.py:91
 msgid "submission deadline"
 msgstr "fecha límite de entrega"
 
-#: events/models.py:147
+#: events/models.py:151
 msgid "Draft (not sent yet)"
 msgstr "Borrador (no enviado)"
 
-#: events/models.py:148 templates/events/review_queue.html:3
+#: events/models.py:152 templates/events/review_queue.html:3
 msgid "Waiting for approval"
 msgstr "Esperando aprobación"
 
-#: events/models.py:149
+#: events/models.py:153
 msgid "Changes requested"
 msgstr "Se pidieron cambios"
 
-#: events/models.py:150 events/models.py:277 templates/events/regional.html:10
+#: events/models.py:154 events/models.py:281 templates/events/regional.html:10
 msgid "Approved"
 msgstr "Aprobado"
 
-#: events/models.py:151 events/models.py:278
+#: events/models.py:155 events/models.py:282
 msgid "Declined"
 msgstr "Rechazado"
 
-#: events/models.py:152
+#: events/models.py:156
 msgid "Cancelled"
 msgstr "Cancelado"
 
-#: events/models.py:160
+#: events/models.py:164
 msgid "No flyer yet"
 msgstr "Sin flyer"
 
-#: events/models.py:161
+#: events/models.py:165
 msgid "Waiting for flyer review"
 msgstr "Esperando revisión del flyer"
 
-#: events/models.py:162
+#: events/models.py:166
 msgid "With the designer"
 msgstr "Con el diseñador"
 
-#: events/models.py:163 templates/events/event_detail.html:13
+#: events/models.py:167 templates/events/event_detail.html:13
 msgid "Flyer approved"
 msgstr "Flyer aprobado"
 
-#: events/models.py:169
+#: events/models.py:173
 msgid "event name"
 msgstr "nombre del evento"
 
-#: events/models.py:171
+#: events/models.py:175
 msgid "date"
 msgstr "fecha"
 
-#: events/models.py:172
+#: events/models.py:176
 msgid "starts at"
 msgstr "empieza a las"
 
-#: events/models.py:173
+#: events/models.py:177
 msgid "ends at"
 msgstr "termina a las"
 
-#: events/models.py:174
+#: events/models.py:178
 msgid "place / address"
 msgstr "lugar / dirección"
 
-#: events/models.py:175
+#: events/models.py:179
 msgid "description"
 msgstr "descripción"
 
-#: events/models.py:176
+#: events/models.py:180
 msgid "contact person"
 msgstr "persona de contacto"
 
-#: events/models.py:177
+#: events/models.py:181
 msgid "contact phone"
 msgstr "teléfono de contacto"
 
-#: events/models.py:178
+#: events/models.py:182
 msgid "we need help from other churches"
 msgstr "necesitamos ayuda de otras iglesias"
 
-#: events/models.py:179
+#: events/models.py:183
 msgid "what help do you need?"
 msgstr "¿qué ayuda necesitan?"
 
-#: events/models.py:180
+#: events/models.py:184
 msgid "expected attendance"
 msgstr "asistencia esperada"
 
-#: events/models.py:254 events/reports.py:42 events/reports.py:114
+#: events/models.py:258 events/reports.py:42 events/reports.py:114
 #: events/reports.py:143 templates/accounts/user_list.html:5
 #: templates/events/regional.html:10 templates/events/reports.html:14
 msgid "Church"
 msgstr "Iglesia"
 
-#: events/models.py:276 templates/events/regional.html:10
+#: events/models.py:280 templates/events/regional.html:10
 msgid "Waiting"
 msgstr "Esperando"
 
-#: events/models.py:281
+#: events/models.py:285
 msgid "cancel this event"
 msgstr "cancelar este evento"
 
-#: events/models.py:282
+#: events/models.py:286
 msgid "new date"
 msgstr "nueva fecha"
 
-#: events/models.py:283
+#: events/models.py:287
 msgid "new start time"
 msgstr "nueva hora de inicio"
 
-#: events/models.py:284
+#: events/models.py:288
 msgid "new end time"
 msgstr "nueva hora de fin"
 
-#: events/models.py:285
+#: events/models.py:289
 msgid "new place / address"
 msgstr "nuevo lugar / dirección"
 
-#: events/models.py:286
+#: events/models.py:290
 msgid "why is this change needed?"
 msgstr "¿por qué se necesita este cambio?"
 
-#: events/models.py:344 templates/events/event_detail.html:180
+#: events/models.py:348 templates/events/event_detail.html:180
 msgid "Report not sent yet"
 msgstr "Informe no enviado"
 
-#: events/models.py:345 templates/events/event_detail.html:180
+#: events/models.py:349 templates/events/event_detail.html:180
 #: templates/events/post_reports.html:18
 msgid "Report sent"
 msgstr "Informe enviado"
 
-#: events/models.py:348
-msgid "church members who attended"
-msgstr "miembros de la iglesia que asistieron"
+#: events/models.py:352
+msgid "Church of God members who attended"
+msgstr "Miembros de la Iglesia de Dios que asistieron"
 
-#: events/models.py:349
+#: events/models.py:353
 msgid "supporters from other churches"
 msgstr "apoyo de otras iglesias (personas)"
 
-#: events/models.py:350
+#: events/models.py:354
 msgid "which churches came to support?"
 msgstr "¿Qué iglesias vinieron a apoyar?"
 
-#: events/models.py:352
-msgid "people served / helped"
-msgstr "personas atendidas / ayudadas"
+#: events/models.py:358
+msgid "members who supported"
+msgstr "miembros que apoyaron"
 
-#: events/models.py:353 templates/events/_report_stats.html:6
+#: events/models.py:359
+msgid "People who helped run the event: teaching, back office…"
+msgstr "Personas que ayudaron en el evento: enseñando, apoyo logístico…"
+
+#: events/models.py:360 templates/events/_report_stats.html:7
 msgid "fruits"
 msgstr "frutos"
 
-#: events/models.py:354 events/reports.py:144
-#: templates/events/_report_stats.html:7
+#: events/models.py:361 events/reports.py:144
+#: templates/events/_report_stats.html:8
 msgid "Bible studies"
 msgstr "Estudios bíblicos"
 
-#: events/models.py:355 templates/events/_report_stats.html:8
+#: events/models.py:362 templates/events/_report_stats.html:10
 msgid "invites"
 msgstr "invitaciones"
 
-#: events/models.py:356
+#: events/models.py:362
+msgid "People who were invited."
+msgstr "Personas que fueron invitadas."
+
+#: events/models.py:363
 msgid "cost of the event (RD$)"
 msgstr "costo del evento (RD$)"
 
-#: events/models.py:357
-msgid "notes and testimonies"
-msgstr "notas y testimonios"
+#: events/models.py:364
+msgid "fragrance"
+msgstr "fragancia"
+
+#: events/models.py:365
+msgid "Testimonies, or something nice that happened."
+msgstr "Testimonios, o algo bonito que pasó."
 
 #: events/reports.py:42 events/reports.py:114 events/reports.py:143
 #: templates/events/reports.html:14
@@ -614,7 +638,8 @@ msgstr "Hora"
 msgid "Event"
 msgstr "Evento"
 
-#: events/reports.py:42 events/reports.py:114 templates/events/reports.html:14
+#: events/reports.py:42 events/reports.py:114 events/reports.py:143
+#: templates/events/reports.html:14
 msgid "Type"
 msgstr "Tipo"
 
@@ -693,34 +718,35 @@ msgid "Supporting churches"
 msgstr "Iglesias que apoyaron"
 
 #: events/reports.py:144
-msgid "Served"
-msgstr "Atendidos"
+msgid "Members who supported"
+msgstr "Miembros que apoyaron"
 
 #: events/reports.py:144
 msgid "Fruits"
 msgstr "Frutos"
 
-#: events/reports.py:144
+#: events/reports.py:144 templates/events/report_form.html:24
 msgid "Invites"
 msgstr "Invitaciones"
 
-#: events/reports.py:144
+#: events/reports.py:145
 msgid "Cost (RD$)"
 msgstr "Costo (RD$)"
 
-#: events/reports.py:145
-msgid "Notes"
-msgstr "Notas"
+#: events/reports.py:145 templates/events/event_detail.html:185
+#: templates/events/report_form.html:28
+msgid "Fragrance"
+msgstr "Fragancia"
 
 #: events/reports.py:160
 msgid "Not sent"
 msgstr "No enviado"
 
-#: events/reports.py:164 templates/events/regional.html:14
+#: events/reports.py:166 templates/events/regional.html:14
 msgid "Sent"
 msgstr "Enviado"
 
-#: events/reports.py:168
+#: events/reports.py:172
 msgid "Total"
 msgstr "Total"
 
@@ -1385,14 +1411,14 @@ msgid "members"
 msgstr "miembros"
 
 #: templates/events/_report_stats.html:4
-msgid "supporters"
-msgstr "apoyo"
+msgid "from other churches"
+msgstr "de otras iglesias"
 
-#: templates/events/_report_stats.html:5
-msgid "served"
-msgstr "atendidos"
+#: templates/events/_report_stats.html:6
+msgid "supported"
+msgstr "apoyaron"
 
-#: templates/events/_report_stats.html:9
+#: templates/events/_report_stats.html:11
 msgid "cost"
 msgstr "costo"
 
@@ -1785,11 +1811,11 @@ msgstr "Se pidieron correcciones"
 
 #: templates/events/event_detail.html:196
 msgid ""
-"After the event, tell the region how it went: attendance, fruits, Bible "
-"studies, invites, cost and photos."
+"After the event, tell the region how it went: attendance, invites, cost, the"
+" fragrance (testimonies) and photos."
 msgstr ""
-"Después del evento, cuente a la región cómo les fue: asistencia, frutos, "
-"estudios bíblicos, invitaciones, costo y fotos."
+"Después del evento, cuente a la región cómo les fue: asistencia, "
+"invitaciones, costo, la fragancia (testimonios) y fotos."
 
 #: templates/events/event_detail.html:197
 msgid "Continue the report"
@@ -2038,19 +2064,23 @@ msgstr "Excepciones aprobadas"
 msgid "Attendance"
 msgstr "Asistencia"
 
-#: templates/events/report_form.html:17
+#: templates/events/report_form.html:18
 msgid "Results"
 msgstr "Resultados"
 
-#: templates/events/report_form.html:29
+#: templates/events/report_form.html:26
+msgid "Cost"
+msgstr "Costo"
+
+#: templates/events/report_form.html:34
 msgid "Remove this photo?"
 msgstr "¿Quitar esta foto?"
 
-#: templates/events/report_form.html:29
+#: templates/events/report_form.html:34
 msgid "Remove"
 msgstr "Quitar"
 
-#: templates/events/report_form.html:34
+#: templates/events/report_form.html:39
 msgid ""
 "Send the report to the Regional Events Rep and the Overseer? You will not be"
 " able to change it after."
@@ -2058,11 +2088,11 @@ msgstr ""
 "¿Enviar el informe al Encargado regional y al Supervisor? Después no podrá "
 "cambiarlo."
 
-#: templates/events/report_form.html:34
+#: templates/events/report_form.html:39
 msgid "Send report"
 msgstr "Enviar informe"
 
-#: templates/events/report_form.html:35
+#: templates/events/report_form.html:40
 msgid "Save and finish later"
 msgstr "Guardar y terminar después"
 
@@ -2133,6 +2163,25 @@ msgstr "inactivo"
 msgid "Event types"
 msgstr "Tipos de evento"
 
+#: templates/events/settings.html:20
+msgid "full report"
+msgstr "informe completo"
+
 #: templates/events/settings.html:23
 msgid "Quarter deadlines"
 msgstr "Fechas límite de los trimestres"
+
+#~ msgid "people served / helped"
+#~ msgstr "personas atendidas / ayudadas"
+
+#~ msgid "notes and testimonies"
+#~ msgstr "notas y testimonios"
+
+#~ msgid "Served"
+#~ msgstr "Atendidos"
+
+#~ msgid "Notes"
+#~ msgstr "Notas"
+
+#~ msgid "served"
+#~ msgstr "atendidos"

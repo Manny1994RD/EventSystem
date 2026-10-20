@@ -26,6 +26,10 @@ class Church(models.Model):
 class EventType(models.Model):
     name_es = models.CharField(_("name (Spanish)"), max_length=80)
     name_en = models.CharField(_("name (English)"), max_length=80)
+    full_report = models.BooleanField(
+        _("uses the full report (like Bible socials)"), default=False,
+        help_text=_("Adds members who supported, fruits and Bible studies to the post-event report."),
+    )
     is_active = models.BooleanField(_("active"), default=True)
 
     class Meta:
@@ -345,16 +349,20 @@ class EventReport(models.Model):
         SUBMITTED = "submitted", _("Report sent")
 
     event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name="report")
-    members_attended = models.PositiveIntegerField(_("church members who attended"), default=0)
+    members_attended = models.PositiveIntegerField(_("Church of God members who attended"), default=0)
     supporters_attended = models.PositiveIntegerField(_("supporters from other churches"), default=0)
     supporting_churches = models.ManyToManyField(Church, verbose_name=_("which churches came to support?"),
                                                  blank=True, related_name="+")
-    people_served = models.PositiveIntegerField(_("people served / helped"), default=0)
+    # Only asked for event types with full_report (Bible socials).
+    members_supporting = models.PositiveIntegerField(
+        _("members who supported"), default=0,
+        help_text=_("People who helped run the event: teaching, back office…"))
     fruits = models.PositiveIntegerField(_("fruits"), default=0)
     bible_studies = models.PositiveIntegerField(_("Bible studies"), default=0)
-    invites = models.PositiveIntegerField(_("invites"), default=0)
+    invites = models.PositiveIntegerField(_("invites"), default=0, help_text=_("People who were invited."))
     cost = models.DecimalField(_("cost of the event (RD$)"), max_digits=10, decimal_places=2, default=0)
-    notes = models.TextField(_("notes and testimonies"), blank=True)
+    fragrance = models.TextField(_("fragrance"), blank=True,
+                                 help_text=_("Testimonies, or something nice that happened."))
 
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     review_comment = models.TextField(blank=True)
@@ -362,6 +370,10 @@ class EventReport(models.Model):
                                      related_name="+")
     submitted_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def full(self):
+        return self.event.event_type.full_report
 
     @property
     def total_attendance(self):

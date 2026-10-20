@@ -1,10 +1,12 @@
 {% load i18n %}
 <div class="stats">
   <div><span>{{ r.members_attended }}</span>{% translate "members" %}</div>
-  <div><span>{{ r.supporters_attended }}</span>{% translate "supporters" %}</div>
-  <div><span>{{ r.people_served }}</span>{% translate "served" %}</div>
+  <div><span>{{ r.supporters_attended }}</span>{% translate "from other churches" %}</div>
+  {% if full %}
+  <div><span>{{ r.members_supporting }}</span>{% translate "supported" %}</div>
   <div><span>{{ r.fruits }}</span>{% translate "fruits" %}</div>
   <div><span>{{ r.bible_studies }}</span>{% translate "Bible studies" %}</div>
+  {% endif %}
   <div><span>{{ r.invites }}</span>{% translate "invites" %}</div>
   <div><span>RD${{ r.cost|floatformat:"0g" }}</span>{% translate "cost" %}</div>
 </div>

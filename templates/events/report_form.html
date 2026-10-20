@@ -10,18 +10,23 @@
   <div class="form-grid">
     {% include "_field.html" with field=form.members_attended %}
     {% include "_field.html" with field=form.supporters_attended %}
-    {% include "_field.html" with field=form.people_served %}
+    {% if form.members_supporting %}{% include "_field.html" with field=form.members_supporting %}{% endif %}
   </div>
   <div class="field"><label>{{ form.supporting_churches.label|capfirst }}</label>
     <div class="checks">{% for cb in form.supporting_churches %}<label>{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div></div>
+  {% if form.fruits %}
   <h3>🌱 {% translate "Results" %}</h3>
   <div class="form-grid">
     {% include "_field.html" with field=form.fruits %}
     {% include "_field.html" with field=form.bible_studies %}
-    {% include "_field.html" with field=form.invites %}
-    {% include "_field.html" with field=form.cost %}
   </div>
-  {% include "_field.html" with field=form.notes %}
+  {% endif %}
+  <h3>✉️ {% translate "Invites" %}</h3>
+  <div class="form-grid">{% include "_field.html" with field=form.invites %}</div>
+  <h3>💵 {% translate "Cost" %}</h3>
+  <div class="form-grid">{% include "_field.html" with field=form.cost %}</div>
+  <h3>🌸 {% translate "Fragrance" %}</h3>
+  {% include "_field.html" with field=form.fragrance %}
   <h3>📷 {% translate "Photos" %}</h3>
   {% if report.pk and report.photos.exists %}
     <div class="photos">{% for p in report.photos.all %}
