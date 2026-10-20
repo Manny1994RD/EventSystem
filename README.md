@@ -13,6 +13,7 @@ A web app for planning each quarter's church events across the region. It works 
 - **Quarters** run Jan–Mar, Apr–Jun, Jul–Sep and Oct–Dec. Submissions are due 2 weeks before the quarter starts. Anything sent after that is marked "late".
 - **Public calendar** at `/public/`: members can see approved events without logging in.
 - **Reports:** download as Excel or PDF, filtered by quarter, church, type or status.
+- **Post-event reports:** after an event, the church reports how many members and supporters attended (and from which churches), people served, fruits, Bible studies, invites, the cost, notes and photos. The Regional Events Rep and the Overseer are notified, and the totals show on the **After the event** page and in the Excel download.
 - **Languages:** Spanish and English. Each person picks one with the ES / EN buttons.
 - **In-app notifications** (🔔).
 - **Email reminders:** off until an admin turns them on (see below). WhatsApp to the region's group chat is planned for later.

@@ -158,3 +158,12 @@ details summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
 .footer-note { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 2rem; }
 .qnav { flex-wrap: nowrap; padding: .6rem 1rem; }
 .qnav > div { flex: 1; min-width: 0; }
+
+/* post-event reports */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .5rem; margin: .5rem 0 1rem; }
+.stats > div { background: var(--grey-bg); border-radius: 10px; padding: .6rem; text-align: center; font-size: .85rem; color: var(--muted); }
+.stats span { display: block; font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .5rem; margin: .5rem 0 1rem; }
+.photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.checks { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; }
+.checks label { font-weight: 500; display: flex; align-items: center; }

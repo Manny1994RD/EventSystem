@@ -12,10 +12,12 @@ from .models import (
     Activity,
     ChangeRequest,
     Event,
+    EventReport,
     EventStatus,
     Flyer,
     FlyerStatus,
     Notification,
+    ReportPhoto,
     SiteSettings,
 )
 
@@ -348,3 +350,48 @@ def review_flyer(event, user, approve, notes=""):
         notify(church_users(event.church), event,
                _("The flyer for “%(title)s” was sent to the graphic designer for adjustments."), exclude=user, **params)
     event.save()
+
+
+# --- post-event reports -----------------------------------------------------
+
+def can_write_report(user, event):
+    return (is_own_church(user, event) and event.status == EventStatus.APPROVED
+            and event.date <= timezone.localdate())
+
+
+@transaction.atomic
+def save_report(event, user, form, submit=False):
+    if not can_write_report(user, event):
+        raise NotAllowed
+    report = form.save(commit=False)
+    if report.status == EventReport.Status.SUBMITTED:
+        raise NotAllowed
+    report.event = event
+    report.save()
+    form.save_m2m()
+    for f in form.cleaned_data.get("photos") or []:
+        ReportPhoto.objects.create(report=report, file=f, uploaded_by=user)
+    if submit:
+        report.status = EventReport.Status.SUBMITTED
+        report.submitted_by = user
+        report.submitted_at = timezone.now()
+        report.save()
+        log(event, user, _("Post-event report sent."))
+        notify(reviewers(), event, _("%(church)s sent the report for “%(title)s” (%(date)s): %(n)s attended."),
+               exclude=user, church=event.church, title=event.title, date=fmt_date(event.date),
+               n=report.total_attendance)
+    return report
+
+
+@transaction.atomic
+def return_report(report, user, comment):
+    if not user.is_reviewer or report.status != EventReport.Status.SUBMITTED or not comment.strip():
+        raise NotAllowed
+    event = report.event
+    report.status = EventReport.Status.DRAFT
+    report.review_comment = comment.strip()
+    report.save()
+    log(event, user, _("Report sent back for corrections: %(comment)s"), comment=comment.strip())
+    notify(church_users(event.church), event,
+           _("%(user)s asked for corrections to the report for “%(title)s”: %(comment)s"),
+           exclude=user, user=user, title=event.title, comment=comment.strip())

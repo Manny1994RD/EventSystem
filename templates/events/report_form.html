@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<p><a href="{% url 'events:detail' event.pk %}">‹ {{ event.title }}</a></p>
+<h1>📝 {% translate "Post-event report" %}</h1>
+<p class="muted">{{ event.title }} · {{ event.church }} · {{ event.date|date:"j F Y" }}</p>
+{% if report.review_comment %}<div class="msg warning"><strong>{% translate "Corrections requested" %}:</strong> {{ report.review_comment }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="msg error">{{ e }}</div>{% endfor %}
+  <h3>👥 {% translate "Attendance" %}</h3>
+  <div class="form-grid">
+    {% include "_field.html" with field=form.members_attended %}
+    {% include "_field.html" with field=form.supporters_attended %}
+    {% include "_field.html" with field=form.people_served %}
+  </div>
+  <div class="field"><label>{{ form.supporting_churches.label|capfirst }}</label>
+    <div class="checks">{% for cb in form.supporting_churches %}<label>{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div></div>
+  <h3>🌱 {% translate "Results" %}</h3>
+  <div class="form-grid">
+    {% include "_field.html" with field=form.fruits %}
+    {% include "_field.html" with field=form.bible_studies %}
+    {% include "_field.html" with field=form.invites %}
+    {% include "_field.html" with field=form.cost %}
+  </div>
+  {% include "_field.html" with field=form.notes %}
+  <h3>📷 {% translate "Photos" %}</h3>
+  {% if report.pk and report.photos.exists %}
+    <div class="photos">{% for p in report.photos.all %}
+      <div><img src="{% url 'events:report_photo' p.pk %}" alt="">
+        <button class="btn link small" form="del-{{ p.pk }}" data-confirm="{% translate 'Remove this photo?' %}">🗑 {% translate "Remove" %}</button></div>
+    {% endfor %}</div>
+  {% endif %}
+  {% include "_field.html" with field=form.photos %}
+  <div class="row" style="margin-top:1rem">
+    <button class="btn ok big" name="submit" value="1" data-confirm="{% translate 'Send the report to the Regional Events Rep and the Overseer? You will not be able to change it after.' %}">📨 {% translate "Send report" %}</button>
+    <button class="btn ghost" name="save" value="1">{% translate "Save and finish later" %}</button>
+  </div>
+</form>
+{% if report.pk %}{% for p in report.photos.all %}
+<form id="del-{{ p.pk }}" method="post" action="{% url 'events:report_photo_delete' p.pk %}">{% csrf_token %}</form>
+{% endfor %}{% endif %}
+{% endblock %}

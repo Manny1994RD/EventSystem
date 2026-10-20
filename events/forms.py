@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .models import ChangeRequest, Church, Event, EventType, Quarter, SiteSettings
+from .models import ChangeRequest, Church, Event, EventReport, EventType, Quarter, SiteSettings
 
 ALLOWED_FLYER_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".pdf"}
 
@@ -177,3 +177,59 @@ class EmailSettingsForm(forms.ModelForm):
         if commit:
             site.save()
         return site
+
+
+MAX_REPORT_PHOTOS = 12
+PHOTO_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+
+class MultiplePhotoInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultiplePhotoField(forms.FileField):
+    def clean(self, data, initial=None):
+        single = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single(d, initial) for d in data]
+        return [single(data, initial)] if data else []
+
+
+class EventReportForm(forms.ModelForm):
+    photos = MultiplePhotoField(
+        label=_("Photos"), required=False,
+        widget=MultiplePhotoInput(attrs={"multiple": True, "accept": "image/*"}),
+    )
+
+    class Meta:
+        model = EventReport
+        fields = ["members_attended", "supporters_attended", "supporting_churches", "people_served", "fruits",
+                  "bible_studies", "invites", "cost", "notes"]
+        widgets = {
+            "supporting_churches": forms.CheckboxSelectMultiple,
+            "notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        event = self.instance.event
+        self.fields["photos"].help_text = (_("You can pick several photos at once (up to %(n)s in total).")
+                                           % {"n": MAX_REPORT_PHOTOS})
+        self.fields["supporting_churches"].queryset = Church.objects.filter(is_active=True).exclude(pk=event.church_id)
+        for name in ("members_attended", "supporters_attended", "people_served", "fruits", "bible_studies",
+                     "invites", "cost"):
+            self.fields[name].widget.attrs.update({"inputmode": "decimal" if name == "cost" else "numeric",
+                                                   "min": 0})
+
+    def clean_photos(self):
+        files = self.cleaned_data.get("photos") or []
+        existing = self.instance.photos.count() if self.instance.pk else 0
+        if existing + len(files) > MAX_REPORT_PHOTOS:
+            raise forms.ValidationError(_("Too many photos (max %(n)s).") % {"n": MAX_REPORT_PHOTOS})
+        for f in files:
+            if os.path.splitext(f.name)[1].lower() not in PHOTO_EXT:
+                raise forms.ValidationError(_("“%(name)s” is not a photo.") % {"name": f.name})
+            if f.size > settings.MAX_FLYER_MB * 1024 * 1024:
+                raise forms.ValidationError(_("“%(name)s” is too big (max %(mb)s MB).")
+                                            % {"name": f.name, "mb": settings.MAX_FLYER_MB})
+        return files

@@ -35,6 +35,7 @@
   {% if user.is_reviewer %}<a href="{% url 'events:review_queue' %}" class="{% if u == 'review_queue' %}on{% endif %}">{% translate "To approve" %}</a>{% endif %}
   {% if user.can_review_flyers %}<a href="{% url 'events:flyer_queue' %}" class="{% if u == 'flyer_queue' %}on{% endif %}">{% translate "Flyers" %}</a>{% endif %}
   {% if user.is_designer %}<a href="{% url 'events:designer_queue' %}" class="{% if u == 'designer_queue' %}on{% endif %}">{% translate "Flyers to fix" %}</a>{% endif %}
+  {% if user.is_church_user or user.sees_all_churches %}<a href="{% url 'events:post_reports' %}" class="{% if u == 'post_reports' or u == 'report_edit' %}on{% endif %}">{% translate "After the event" %}</a>{% endif %}
   {% if user.sees_all_churches %}<a href="{% url 'events:regional' %}" class="{% if u == 'regional' %}on{% endif %}">{% translate "Region" %}</a>{% endif %}
   {% if user.is_reviewer or user.can_manage %}<a href="{% url 'events:reports' %}" class="{% if u == 'reports' %}on{% endif %}">{% translate "Reports" %}</a>{% endif %}
   {% if user.can_manage %}<a href="{% url 'users' %}" class="{% if u == 'users' or u == 'user_edit' or u == 'user_new' %}on{% endif %}">{% translate "Users" %}</a><a href="{% url 'events:settings' %}" class="{% if u == 'settings' %}on{% endif %}">{% translate "Settings" %}</a>{% endif %}

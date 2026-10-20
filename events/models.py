@@ -335,3 +335,49 @@ class ReminderLog(models.Model):
 
     key = models.CharField(max_length=200, unique=True)
     sent_at = models.DateTimeField(auto_now_add=True)
+
+
+class EventReport(models.Model):
+    """What happened at an event, filled in by the church afterwards."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Report not sent yet")
+        SUBMITTED = "submitted", _("Report sent")
+
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name="report")
+    members_attended = models.PositiveIntegerField(_("church members who attended"), default=0)
+    supporters_attended = models.PositiveIntegerField(_("supporters from other churches"), default=0)
+    supporting_churches = models.ManyToManyField(Church, verbose_name=_("which churches came to support?"),
+                                                 blank=True, related_name="+")
+    people_served = models.PositiveIntegerField(_("people served / helped"), default=0)
+    fruits = models.PositiveIntegerField(_("fruits"), default=0)
+    bible_studies = models.PositiveIntegerField(_("Bible studies"), default=0)
+    invites = models.PositiveIntegerField(_("invites"), default=0)
+    cost = models.DecimalField(_("cost of the event (RD$)"), max_digits=10, decimal_places=2, default=0)
+    notes = models.TextField(_("notes and testimonies"), blank=True)
+
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    review_comment = models.TextField(blank=True)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="+")
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def total_attendance(self):
+        return self.members_attended + self.supporters_attended
+
+
+def report_photo_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return f"reports/{instance.report.event_id}/{uuid.uuid4().hex}{ext}"
+
+
+class ReportPhoto(models.Model):
+    report = models.ForeignKey(EventReport, on_delete=models.CASCADE, related_name="photos")
+    file = models.FileField(upload_to=report_photo_path)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]

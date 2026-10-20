@@ -165,7 +165,31 @@ Cancellations follow the same rule. The calendar limit is checked again whenever
 | WhatsApp (later) | One group chat for the whole region |
 | Email | Built but **off**. When ready, an admin enters the Regional Events Rep's email in Settings → Email reminders, turns it on, and sends a test. |
 
-## 15. Still open
+## 15. Post-event reports (round 5)
 
-1. WhatsApp group messages: a separate project, for later.
-2. Post-event reports (attendance, photos): do you want them in a later phase?
+After an approved event has happened, the church (the Leader or the Events Rep) fills in a report:
+
+| Field | Notes |
+|---|---|
+| Church members who attended | number |
+| Supporters from other churches | number, plus which churches came (checkboxes) |
+| People served / helped | number |
+| Fruits | number |
+| Bible studies | number |
+| Invites | number |
+| Cost of the event (RD$) | amount |
+| Notes and testimonies | free text **[?] is this the "fragrance" item?** |
+| Photos | up to 12 |
+
+- The church can save it and finish later. When they press **Send report**, the Regional Events Rep and the Overseer are notified.
+- Once sent, the report is locked. A reviewer can send it back for corrections with a comment.
+- **After the event** page: each event in the quarter with its report status (sent / started / missing), plus totals for the region or for one church.
+- The Excel download has a second sheet with every report and the totals.
+- Email reminders (when email is on): the day after the event, and again one week later, if the report hasn't been sent.
+- Photos are private: only that church and the regional team can see them.
+
+## 16. Still open
+
+1. What is "fragrance" in the report? (For now it's covered by "Notes and testimonies".)
+2. "How many members are supported": I read this as people served/helped by the event. Is that right, or does it mean something else?
+3. WhatsApp group messages: a separate project, for later.

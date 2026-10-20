@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from .forms import ReportFilterForm
-from .models import Event, EventStatus, Quarter
+from .models import Event, EventReport, EventStatus, Quarter
 
 
 def _check(user):
@@ -86,6 +86,7 @@ def report_excel(request):
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "A5"
+    _post_event_sheet(wb, events, Font, PatternFill, get_column_letter)
     buf = io.BytesIO()
     wb.save(buf)
     resp = HttpResponse(buf.getvalue(),
@@ -135,3 +136,40 @@ def report_pdf(request):
     resp = HttpResponse(buf.getvalue(), content_type="application/pdf")
     resp["Content-Disposition"] = f'attachment; filename="eventos-{quarter.year}-Q{quarter.number}.pdf"'
     return resp
+
+
+def _post_event_sheet(wb, events, Font, PatternFill, get_column_letter):
+    ws = wb.create_sheet(_("After the event"))
+    cols = [_("Date"), _("Church"), _("Event"), _("Report"), _("Members"), _("Supporters"),
+            _("Supporting churches"), _("Served"), _("Fruits"), _("Bible studies"), _("Invites"), _("Cost (RD$)"),
+            _("Photos"), _("Notes")]
+    ws.append(cols)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1E3A8A")
+    reports = {r.event_id: r for r in EventReport.objects.filter(event__in=events).prefetch_related(
+        "supporting_churches", "photos")}
+    numbers = ["members_attended", "supporters_attended", "people_served", "fruits", "bible_studies", "invites", "cost"]
+    totals = dict.fromkeys(numbers, 0)
+    for e in events:
+        if e.status != EventStatus.APPROVED:
+            continue
+        r = reports.get(e.pk)
+        if r is None or r.status != EventReport.Status.SUBMITTED:
+            ws.append([e.date.strftime("%d/%m/%Y"), e.church.name, e.title,
+                       _("Not sent") if r is None or r.status != EventReport.Status.SUBMITTED else ""])
+            continue
+        for n in numbers:
+            totals[n] += getattr(r, n)
+        ws.append([e.date.strftime("%d/%m/%Y"), e.church.name, e.title, _("Sent"), r.members_attended,
+                   r.supporters_attended, ", ".join(c.name for c in r.supporting_churches.all()), r.people_served,
+                   r.fruits, r.bible_studies, r.invites, float(r.cost), r.photos.count(), r.notes])
+    ws.append([])
+    ws.append([_("Total"), "", "", "", totals["members_attended"], totals["supporters_attended"], "",
+               totals["people_served"], totals["fruits"], totals["bible_studies"], totals["invites"],
+               float(totals["cost"])])
+    for cell in ws[ws.max_row]:
+        cell.font = Font(bold=True)
+    for i, w in enumerate([12, 16, 32, 12, 10, 11, 26, 10, 9, 13, 9, 12, 8, 50], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "A2"

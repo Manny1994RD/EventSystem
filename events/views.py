@@ -18,6 +18,7 @@ from .forms import (
     ChangeRequestForm,
     ChurchForm,
     EmailSettingsForm,
+    EventReportForm,
     EventForm,
     EventTypeForm,
     FlyerUploadForm,
@@ -29,12 +30,14 @@ from .models import (
     ChangeRequest,
     Church,
     Event,
+    EventReport,
     EventStatus,
     EventType,
     Flyer,
     FlyerStatus,
     Notification,
     Quarter,
+    ReportPhoto,
     SiteSettings,
 )
 
@@ -102,6 +105,11 @@ def home(request):
         if no_flyer:
             todo.append(("warning", _("%(n)s event(s) need a flyer soon.") % {"n": len(no_flyer)},
                          "events:list", "?flyer=missing"))
+        missing_reports = mine.filter(status=EventStatus.APPROVED, date__lte=today).exclude(
+            report__status=EventReport.Status.SUBMITTED).count()
+        if missing_reports:
+            todo.append(("warning", _("%(n)s past event(s) need the post-event report.") % {"n": missing_reports},
+                         "events:post_reports", ""))
         if upcoming_count == 0:
             todo.append(("info", _("You haven't added any events for %(q)s yet. Due by %(d)s.")
                          % {"q": upcoming.label, "d": services.fmt_date(upcoming.submission_deadline)},
@@ -118,6 +126,12 @@ def home(request):
         if change_reqs:
             todo.append(("warning", _("%(n)s change request(s) are waiting for you.") % {"n": change_reqs},
                          "events:review_queue", "#changes"))
+    if user.is_reviewer:
+        new_reports = EventReport.objects.filter(status=EventReport.Status.SUBMITTED,
+                                                 submitted_at__gte=timezone.now() - datetime.timedelta(days=7)).count()
+        if new_reports:
+            todo.append(("info", _("%(n)s post-event report(s) arrived this week.") % {"n": new_reports},
+                         "events:post_reports", ""))
     if user.can_review_flyers:
         flyers = Event.objects.filter(flyer_status=FlyerStatus.PENDING).count()
         if flyers:
@@ -243,6 +257,8 @@ def event_detail(request, pk):
         "upload_form": FlyerUploadForm(),
         "change_form": ChangeRequestForm(),
         "max_per_day": SiteSettings.load().max_events_per_day,
+        "report": EventReport.objects.filter(event=event).prefetch_related("photos", "supporting_churches").first(),
+        "can_write_report": services.can_write_report(user, event),
     }
     return render(request, "events/event_detail.html", ctx)
 
@@ -660,3 +676,103 @@ def email_settings(request):
             messages.success(request, _("Settings saved."))
         return redirect("events:email_settings")
     return render(request, "events/email_settings.html", {"form": form, "site": site})
+
+
+# --- post-event reports -----------------------------------------------------
+
+@login_required
+def report_edit(request, pk):
+    user = request.user
+    event = get_event_for(user, pk)
+    if not services.can_write_report(user, event):
+        raise PermissionDenied
+    report = EventReport.objects.filter(event=event).first() or EventReport(event=event)
+    if report.status == EventReport.Status.SUBMITTED:
+        messages.info(request, _("This report was already sent."))
+        return redirect("events:detail", pk=event.pk)
+    form = EventReportForm(request.POST or None, request.FILES or None, instance=report)
+    if request.method == "POST" and form.is_valid():
+        submit = "submit" in request.POST
+        try:
+            services.save_report(event, user, form, submit=submit)
+        except services.NotAllowed:
+            raise PermissionDenied
+        if submit:
+            messages.success(request, _("Report sent! The Regional Events Rep and the Overseer have been notified."))
+            return redirect("events:detail", pk=event.pk)
+        messages.success(request, _("Saved. You can come back and finish it later."))
+        return redirect("events:report_edit", pk=event.pk)
+    return render(request, "events/report_form.html", {"form": form, "event": event, "report": report})
+
+
+@reviewer_required
+@require_POST
+def report_return(request, pk):
+    report = get_object_or_404(EventReport, event_id=pk)
+    comment = request.POST.get("comment", "")
+    if not comment.strip():
+        messages.error(request, _("Write what needs to be corrected."))
+        return redirect("events:detail", pk=pk)
+    try:
+        services.return_report(report, request.user, comment)
+    except services.NotAllowed:
+        raise PermissionDenied
+    messages.success(request, _("Sent back to the church for corrections."))
+    return redirect("events:detail", pk=pk)
+
+
+def _photo_for(user, pk):
+    photo = get_object_or_404(ReportPhoto.objects.select_related("report__event"), pk=pk)
+    if not services.can_view(user, photo.report.event):
+        raise Http404
+    return photo
+
+
+@login_required
+def report_photo(request, pk):
+    photo = _photo_for(request.user, pk)
+    try:
+        return FileResponse(photo.file.open("rb"), as_attachment=request.GET.get("download") == "1")
+    except FileNotFoundError:
+        raise Http404
+
+
+@login_required
+@require_POST
+def report_photo_delete(request, pk):
+    photo = _photo_for(request.user, pk)
+    event = photo.report.event
+    if not services.can_write_report(request.user, event) or photo.report.status == EventReport.Status.SUBMITTED:
+        raise PermissionDenied
+    photo.file.delete(save=False)
+    photo.delete()
+    messages.success(request, _("Photo removed."))
+    return redirect("events:report_edit", pk=event.pk)
+
+
+REPORT_TOTAL_FIELDS = ["members_attended", "supporters_attended", "people_served", "fruits", "bible_studies",
+                       "invites", "cost"]
+
+
+@login_required
+def post_reports(request):
+    user = request.user
+    quarter_id = request.GET.get("quarter")
+    quarter = Quarter.objects.filter(pk=quarter_id).first() if quarter_id else Quarter.current()
+    today = timezone.localdate()
+    events = Event.objects.filter(quarter=quarter, status=EventStatus.APPROVED, date__lte=today).select_related(
+        "church", "event_type").order_by("-date")
+    if not user.sees_all_churches:
+        events = events.filter(church=user.church)
+    church_id = request.GET.get("church")
+    if church_id and user.sees_all_churches:
+        events = events.filter(church_id=church_id)
+    reports = {r.event_id: r for r in EventReport.objects.filter(event__in=events)}
+    rows = [(e, reports.get(e.pk)) for e in events]
+    sent = [r for e, r in rows if r and r.status == EventReport.Status.SUBMITTED]
+    totals = {f: sum(getattr(r, f) for r in sent) for f in REPORT_TOTAL_FIELDS}
+    return render(request, "events/post_reports.html", {
+        "quarter": quarter, "prev_q": quarter.previous(), "next_q": quarter.next(), "rows": rows,
+        "totals": totals, "sent_count": len(sent), "missing_count": len(rows) - len(sent),
+        "churches": Church.objects.all() if user.sees_all_churches else None, "church_id": church_id,
+    })

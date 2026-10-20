@@ -6,7 +6,9 @@ from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
 from events import emailing, services
-from events.models import SLOT_STATUSES, Church, Event, EventStatus, FlyerStatus, Quarter, ReminderLog, SiteSettings
+from events.models import (
+    SLOT_STATUSES, Church, Event, EventReport, EventStatus, FlyerStatus, Quarter, ReminderLog, SiteSettings,
+)
 
 DEADLINE_DAYS = (14, 7, 2, 0)
 
@@ -27,7 +29,7 @@ class Command(BaseCommand):
         if not (site.email_ready and site.email_reminders):
             self.stdout.write("Email reminders are off.")
             return
-        sent = self.quarter_reminders(site) + self.flyer_reminders(site)
+        sent = self.quarter_reminders(site) + self.flyer_reminders(site) + self.report_reminders(site)
         self.stdout.write(f"Reminder emails sent: {sent}")
 
     def once(self, key):
@@ -92,4 +94,25 @@ class Command(BaseCommand):
             users = (services.designers() if event.flyer_status == FlyerStatus.DESIGNER
                      else services.church_users(event.church))
             sent += emailing.send_to_users(users, subject, es, en, event=event, site=site)
+        return sent
+
+    def report_reminders(self, site):
+        """The day after an event, and again a week later, if the post-event report hasn't been sent."""
+        import datetime
+
+        today = timezone.localdate()
+        sent = 0
+        for days in (1, 7):
+            day = today - datetime.timedelta(days=days)
+            events = Event.objects.filter(status=EventStatus.APPROVED, date=day).exclude(
+                report__status=EventReport.Status.SUBMITTED).select_related("church")
+            for event in events:
+                if not self.once(f"report:{event.pk}:{days}"):
+                    continue
+                params = {"title": event.title, "date": services.fmt_date(event.date)}
+                es, en = both(lambda: _("Please send the post-event report for “%(title)s” (%(date)s): attendance, "
+                                        "fruits, Bible studies, invites, cost and photos.") % params)
+                subject = both(lambda: _("Post-event report: %(title)s") % params)
+                sent += emailing.send_to_users(services.church_users(event.church), subject, es, en,
+                                               event=event, site=site)
         return sent

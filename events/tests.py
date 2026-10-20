@@ -351,3 +351,92 @@ class EmailTests(Base):
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(SiteSettings.load().smtp_password, "secret-app-pass")
         self.assertNotContains(self.client.get(reverse("events:email_settings")), "secret-app-pass")
+
+
+class PostEventReportTests(Base):
+    def past_event(self):
+        e = self.event(self.santiago, self.rep, submit=True)
+        services.review_event(e, self.regional, "approve")
+        Event.objects.filter(pk=e.pk).update(date=timezone.localdate() - datetime.timedelta(days=1))
+        e.refresh_from_db()
+        return e
+
+    def post(self, e, **extra):
+        data = {"members_attended": 40, "supporters_attended": 12, "supporting_churches": [self.vega.pk],
+                "people_served": 30, "fruits": 3, "bible_studies": 5, "invites": 25, "cost": "3500.00",
+                "notes": "Good day", **extra}
+        return self.client.post(reverse("events:report_edit", args=[e.pk]), data)
+
+    def test_church_submits_report_with_photos_and_reviewers_are_notified(self):
+        e = self.past_event()
+        self.client.force_login(self.rep)
+        photos = [SimpleUploadedFile(f"p{i}.jpg", PNG, content_type="image/jpeg") for i in range(2)]
+        resp = self.post(e, submit="1", photos=photos)
+        self.assertRedirects(resp, reverse("events:detail", args=[e.pk]))
+        r = e.report
+        self.assertEqual(r.status, "submitted")
+        self.assertEqual(r.total_attendance, 52)
+        self.assertEqual(r.photos.count(), 2)
+        self.assertEqual(list(r.supporting_churches.all()), [self.vega])
+        for user in (self.regional, self.overseer):
+            self.assertTrue(Notification.objects.filter(user=user, text_en__contains="sent the report").exists())
+        # Locked after sending.
+        self.assertRedirects(self.client.get(reverse("events:report_edit", args=[e.pk])),
+                             reverse("events:detail", args=[e.pk]))
+
+    def test_save_draft_then_reviewer_returns_for_corrections(self):
+        e = self.past_event()
+        self.client.force_login(self.rep)
+        self.post(e, save="1")
+        self.assertEqual(e.report.status, "draft")
+        self.post(e, submit="1")
+        e.report.refresh_from_db()
+        self.client.force_login(self.overseer)
+        self.client.post(reverse("events:report_return", args=[e.pk]), {"comment": "Fix the count"})
+        e.report.refresh_from_db()
+        self.assertEqual(e.report.status, "draft")
+        self.assertTrue(Notification.objects.filter(user=self.rep, text_en__contains="corrections").exists())
+
+    def test_no_report_before_event_or_for_other_church(self):
+        future = self.event(self.santiago, self.rep, submit=True)
+        services.review_event(future, self.regional, "approve")
+        self.client.force_login(self.rep)
+        self.assertEqual(self.client.get(reverse("events:report_edit", args=[future.pk])).status_code, 403)
+        past = self.past_event()
+        self.client.force_login(self.leader_vega)
+        self.assertEqual(self.client.get(reverse("events:report_edit", args=[past.pk])).status_code, 403)
+
+    def test_pages_and_excel_include_reports(self):
+        e = self.past_event()
+        self.client.force_login(self.rep)
+        self.post(e, submit="1", photos=[SimpleUploadedFile("p.jpg", PNG)])
+        photo = e.report.photos.get()
+        self.assertEqual(self.client.get(reverse("events:post_reports")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("events:report_photo", args=[photo.pk])).status_code, 200)
+        self.client.force_login(self.rep_moca)
+        self.assertEqual(self.client.get(reverse("events:report_photo", args=[photo.pk])).status_code, 404)
+        self.client.force_login(self.regional)
+        resp = self.client.get(reverse("events:post_reports"), {"quarter": e.quarter_id})
+        self.assertContains(resp, e.title)
+        self.assertEqual(self.client.get(reverse("events:detail", args=[e.pk])).status_code, 200)
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        resp = self.client.get(reverse("events:report_excel"), {"quarter": e.quarter_id})
+        wb = load_workbook(BytesIO(resp.content))
+        sheet = wb.worksheets[1]
+        self.assertEqual(sheet.cell(row=2, column=5).value, 40)
+
+    def test_report_reminder_email(self):
+        from django.core import mail
+        from django.core.management import call_command
+
+        s = SiteSettings.load()
+        s.email_enabled, s.email_from = True, "r@example.com"
+        s.save()
+        self.rep.email = "rep@example.com"
+        self.rep.save()
+        self.past_event()
+        call_command("send_reminders", stdout=open("/dev/null", "w"))
+        self.assertTrue(any("report" in m.subject.lower() or "informe" in m.subject.lower() for m in mail.outbox))
